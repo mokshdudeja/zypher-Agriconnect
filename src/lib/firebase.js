@@ -4,12 +4,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCPqo6OEr8UwJV1RXce0It-ZR2Fjjz_WIo",
-  authDomain: "agriconnect-zypher-db.firebaseapp.com",
-  projectId: "agriconnect-zypher-db",
-  storageBucket: "agriconnect-zypher-db.firebasestorage.app",
-  messagingSenderId: "677338662330",
-  appId: "1:677338662330:web:78d2206bd4c8d468498983"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
