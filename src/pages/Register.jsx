@@ -20,6 +20,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [agreed, setAgreed] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -35,6 +36,10 @@ export default function Register() {
 
     if (!name || !email || !password) {
       setError('Please fill in all required fields')
+      return
+    }
+    if (!agreed) {
+      setError('You must agree to the Terms of Service and Privacy Policy')
       return
     }
     if (password.length < 6) {
@@ -260,7 +265,7 @@ export default function Register() {
 
                 <div className="pt-1">
                   <label className="flex items-start gap-2 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 mt-0.5 rounded border-slate-300 text-leaf-600 focus:ring-leaf-500" />
+                    <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="w-4 h-4 mt-0.5 rounded border-slate-300 text-leaf-600 focus:ring-leaf-500" />
                     <span className="text-sm text-slate-500">
                       I agree to the <span className="text-leaf-600 font-semibold">Terms of Service</span> and <span className="text-leaf-600 font-semibold">Privacy Policy</span>
                     </span>

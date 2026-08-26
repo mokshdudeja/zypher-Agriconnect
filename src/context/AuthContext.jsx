@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { 
   signOut,
   sendEmailVerification,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
@@ -124,8 +125,17 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, resendVerification }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, resendVerification, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )

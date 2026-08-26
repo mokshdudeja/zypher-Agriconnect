@@ -8,6 +8,7 @@ const roleNavItems = {
     { path: '/farmer', label: 'Dashboard' },
     { path: '/farmer/add-crop', label: 'Add Crop' },
     { path: '/farmer/listings', label: 'My Listings' },
+    { path: '/farmer/orders', label: 'Orders' },
   ],
   wholesaler: [
     { path: '/wholesaler', label: 'Dashboard' },

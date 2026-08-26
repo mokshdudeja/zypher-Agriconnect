@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Search, MapPin, Star, Filter, Loader2 } from 'lucide-react'
 import { Button, Card, Badge } from '../../components/ui'
 import { db } from '../../lib/firebase'
-import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, getDocs, orderBy, addDoc, serverTimestamp, limit, startAfter } from 'firebase/firestore'
 import { useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
@@ -11,26 +11,35 @@ export default function BrowseListings() {
   const [search, setSearch] = useState('')
   const [bidModal, setBidModal] = useState(null)
   const [bidAmount, setBidAmount] = useState('')
-  const [listings, setListings] = useState([])
+  const [listings, setListings] = useState([]
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [lastDoc, setLastDoc] = useState(null)
+  const [hasMore, setHasMore] = useState(true)
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
-    const fetchListings = async () => {
+    const fetchListings = async (isLoadMore = false) => {
       try {
-        setLoading(true)
-        
-        // 1. Fetch crops
-        const cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc')))
-        const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        if (isLoadMore) setLoadingMore(true)
+        else setLoading(true)
 
-        // 2. Fetch profiles to "join" metadata
-        const profilesSnap = await getDocs(collection(db, 'profiles'))
-        const profilesMap = {}
-        profilesSnap.docs.forEach(doc => {
-          profilesMap[doc.id] = doc.data()
-        })
+        let profilesMap = {}
+        if (!isLoadMore) {
+          const profilesSnap = await getDocs(collection(db, 'profiles'))
+          profilesSnap.docs.forEach(doc => { profilesMap[doc.id] = doc.data() })
+        }
+
+        const constraints = [orderBy('created_at', 'desc'), limit(PAGE_SIZE)]
+        if (isLoadMore && lastDoc) constraints.splice(1, 0, startAfter(lastDoc))
+        const cropsSnap = await getDocs(query(collection(db, 'crops'), ...constraints))
+
+        if (cropsSnap.docs.length < PAGE_SIZE) setHasMore(false)
+        if (cropsSnap.docs.length > 0) setLastDoc(cropsSnap.docs[cropsSnap.docs.length - 1])
+
+        const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
         const mapped = cropsData.map(l => ({
           id: l.id,
@@ -47,12 +56,13 @@ export default function BrowseListings() {
           rating: (4.0 + Math.random()).toFixed(1)
         }))
 
-        setListings(mapped)
+        setListings(prev => isLoadMore ? [...prev, ...mapped] : mapped)
       } catch (err) {
         console.error('Fetch error:', err)
         toast.error('Failed to load listings')
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     }
 
@@ -71,7 +81,7 @@ export default function BrowseListings() {
         crop_id: bidModal.id,
         crop_name: bidModal.crop,
         farmer_id: bidModal.farmer_id,
-        wholesaler_id: user.uid,
+        wholesaler_id: user.id,
         wholesaler_name: user.name || 'Anonymous Wholesaler',
         bid_amount: parseFloat(bidAmount),
         status: 'pending',
@@ -98,7 +108,7 @@ export default function BrowseListings() {
         listing_id: listing.id,
         crop_name: listing.crop,
         farmer_id: listing.farmer_id,
-        wholesaler_id: user.uid,
+        wholesaler_id: user.id,
         wholesaler_name: user.name || 'Anonymous Wholesaler',
         quantity: listing.numericQty,
         unit: listing.unit,
@@ -213,6 +223,18 @@ export default function BrowseListings() {
           ))}
         </div>
       ) : (
+      hasMore && !loading && (
+        <div className="flex justify-center py-6">
+          <button
+            onClick={() => fetchListings(true)}
+            disabled={loadingMore}
+            className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+            Load More
+          </button>
+        </div>
+      )) : (
         <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200">
           <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-slate-300" />

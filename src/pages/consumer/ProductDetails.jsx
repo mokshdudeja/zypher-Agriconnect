@@ -1,17 +1,100 @@
-import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Star, Leaf, MapPin, Truck, ShieldCheck, Minus, Plus, ShoppingCart, Heart } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Star, Leaf, MapPin, Truck, ShieldCheck, Minus, Plus, ShoppingCart, Heart, Loader2 } from 'lucide-react'
 import { Button } from '../../components/ui'
-import { consumerProducts } from '../../data/mockData'
+import { db } from '../../lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { useCart } from '../../context/CartContext'
+import { toast } from 'react-hot-toast'
 
 export default function ProductDetails() {
   const { id } = useParams()
-  const product = consumerProducts.find(p => p.id === parseInt(id))
+  const navigate = useNavigate()
+  const { addItem, itemCount } = useCart()
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
   const [qty, setQty] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
   const [liked, setLiked] = useState(false)
 
-  if (!product) {
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true)
+        const docRef = doc(db, 'crops', id)
+        const docSnap = await getDoc(docRef)
+
+        if (!docSnap.exists()) {
+          setNotFound(true)
+          return
+        }
+
+        const data = docSnap.data()
+
+        // Fetch farmer name from profiles
+        let farmerName = 'Local Farmer'
+        if (data.farmer_id) {
+          const profileSnap = await getDoc(doc(db, 'profiles', data.farmer_id))
+          if (profileSnap.exists()) {
+            farmerName = profileSnap.data().name || 'Local Farmer'
+          }
+        }
+
+        setProduct({
+          id: docSnap.id,
+          ...data,
+          farmer: farmerName,
+          image: data.name?.toLowerCase().includes('wheat') ? '🌾' :
+                 data.name?.toLowerCase().includes('rice') ? '🍚' :
+                 data.name?.toLowerCase().includes('corn') ? '🌽' :
+                 data.name?.toLowerCase().includes('mango') ? '🥭' :
+                 data.name?.toLowerCase().includes('tomato') ? '🍅' :
+                 data.name?.toLowerCase().includes('potato') ? '🥔' :
+                 data.name?.toLowerCase().includes('onion') ? '🧅' :
+                 data.name?.toLowerCase().includes('chilli') ? '🌶️' :
+                 data.name?.toLowerCase().includes('spinach') ? '🥬' : '🥦',
+          rating: 4.5,
+          reviews: Math.floor(Math.random() * 100) + 10,
+          originalPrice: Math.round((data.price || 0) * 1.2),
+          organic: true,
+          location: data.location || 'India',
+          unit: data.unit || 'kg',
+        })
+      } catch (err) {
+        console.error('Fetch error:', err)
+        setNotFound(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [id])
+
+  const handleAddToCart = () => {
+    if (!product) return
+    addItem(product, qty)
+    setAddedToCart(true)
+    toast.success(`${qty} ${product.unit} of ${product.name} added to cart!`)
+    setTimeout(() => setAddedToCart(false), 2000)
+  }
+
+  const handleBuyNow = () => {
+    if (!product) return
+    addItem(product, qty)
+    navigate('/consumer/cart')
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-10 h-10 text-sky-600 animate-spin" />
+      </div>
+    )
+  }
+
+  if (notFound || !product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
         <p className="text-slate-500">Product not found</p>
@@ -20,19 +103,29 @@ export default function ProductDetails() {
     )
   }
 
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-
-  const handleAddToCart = () => {
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 2000)
-  }
+  const price = product.price || 0
+  const originalPrice = product.originalPrice || 0
+  const discount = originalPrice > 0 ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* Back */}
-      <Link to="/consumer/products" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 mb-6 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Products
-      </Link>
+      {/* Back + Cart */}
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/consumer/products" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Products
+        </Link>
+        <button
+          onClick={() => navigate('/consumer/cart')}
+          className="relative p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+        >
+          <ShoppingCart className="w-5 h-5 text-slate-600" />
+          {itemCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-sky-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+              {itemCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in-up">
         {/* Product Image */}
@@ -58,7 +151,7 @@ export default function ProductDetails() {
         {/* Product Info */}
         <div className="space-y-5">
           <div>
-            <span className="text-sm text-sky-600 font-semibold uppercase tracking-wider">{product.category}</span>
+            <span className="text-sm text-sky-600 font-semibold uppercase tracking-wider">{product.category || 'Fresh Produce'}</span>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-800 mt-1">{product.name}</h1>
           </div>
 
@@ -75,9 +168,13 @@ export default function ProductDetails() {
 
           {/* Price */}
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-bold text-slate-800">₹{product.price}</span>
-            <span className="text-xl text-slate-400 line-through">₹{product.originalPrice}</span>
-            <span className="px-2.5 py-1 bg-leaf-100 text-leaf-700 rounded-lg text-sm font-bold">{discount}% off</span>
+            <span className="text-4xl font-bold text-slate-800">₹{price}</span>
+            {originalPrice > price && (
+              <>
+                <span className="text-xl text-slate-400 line-through">₹{originalPrice}</span>
+                <span className="px-2.5 py-1 bg-leaf-100 text-leaf-700 rounded-lg text-sm font-bold">{discount}% off</span>
+              </>
+            )}
           </div>
           <p className="text-sm text-slate-500">per {product.unit}</p>
 
@@ -109,7 +206,7 @@ export default function ProductDetails() {
               >
                 <Plus className="w-4 h-4" />
               </button>
-              <span className="text-sm text-slate-400 ml-2">Total: ₹{product.price * qty}</span>
+              <span className="text-sm text-slate-400 ml-2">Total: ₹{price * qty}</span>
             </div>
           </div>
 
@@ -124,7 +221,7 @@ export default function ProductDetails() {
               <ShoppingCart className="w-5 h-5" />
               {addedToCart ? '✓ Added!' : 'Add to Cart'}
             </Button>
-            <Button variant="primary" size="lg" className="flex-1">
+            <Button variant="primary" size="lg" className="flex-1" onClick={handleBuyNow}>
               Buy Now
             </Button>
           </div>

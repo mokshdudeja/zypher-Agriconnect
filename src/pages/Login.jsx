@@ -12,7 +12,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login, resendVerification } = useAuth()
+  const [showForgot, setShowForgot] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const { login, resendVerification, resetPassword } = useAuth()
   const navigate = useNavigate()
   const [resending, setResending] = useState(false)
 
@@ -184,10 +186,74 @@ export default function Login() {
                 <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-leaf-600 focus:ring-leaf-500" />
                 <span className="text-sm text-slate-600">Remember me</span>
               </label>
-              <button type="button" className="text-sm font-semibold text-leaf-600 hover:text-leaf-700">
+              <button type="button" onClick={() => setShowForgot(true)} className="text-sm font-semibold text-leaf-600 hover:text-leaf-700">
                 Forgot password?
               </button>
             </div>
+
+            {/* Forgot Password Modal */}
+            {showForgot && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => { setShowForgot(false); setResetSent(false) }}>
+                <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-elevated animate-scale-in" onClick={e => e.stopPropagation()}>
+                  {!resetSent ? (
+                    <>
+                      <h3 className="font-display text-xl font-bold text-slate-800">Reset Password</h3>
+                      <p className="text-sm text-slate-500 mt-1">Enter your email address and we'll send you a link to reset your password.</p>
+                      <div className="mt-4">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input
+                            type="email"
+                            value={email}
+                            readOnly
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 mt-5">
+                        <button
+                          onClick={() => { setShowForgot(false); setResetSent(false) }}
+                          className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const result = await resetPassword(email)
+                            if (result.success) {
+                              setResetSent(true)
+                            } else {
+                              toast.error(result.error)
+                            }
+                          }}
+                          disabled={!email}
+                          className="flex-1 px-4 py-2.5 bg-leaf-600 hover:bg-leaf-700 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                          Send Reset Link
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="w-16 h-16 bg-leaf-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-8 h-8 text-leaf-600" />
+                      </div>
+                      <h3 className="font-display text-xl font-bold text-slate-800">Check your email</h3>
+                      <p className="text-sm text-slate-500 mt-2">
+                        We've sent a password reset link to <span className="font-semibold text-slate-800">{email}</span>
+                      </p>
+                      <button
+                        onClick={() => { setShowForgot(false); setResetSent(false) }}
+                        className="mt-5 w-full px-4 py-2.5 bg-leaf-600 hover:bg-leaf-700 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        Back to Login
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"

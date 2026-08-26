@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
 
@@ -14,6 +15,7 @@ import Register from './pages/Register'
 import FarmerDashboard from './pages/farmer/FarmerDashboard'
 import AddCrop from './pages/farmer/AddCrop'
 import FarmerListings from './pages/farmer/FarmerListings'
+import FarmerOrders from './pages/farmer/FarmerOrders'
 
 // Wholesaler Pages
 import WholesalerDashboard from './pages/wholesaler/WholesalerDashboard'
@@ -69,7 +71,7 @@ export default function App() {
   if (loading) return <AppLoading />
 
   return (
-    <>
+    <CartProvider>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
@@ -87,6 +89,7 @@ export default function App() {
           <Route index element={<FarmerDashboard />} />
           <Route path="add-crop" element={<AddCrop />} />
           <Route path="listings" element={<FarmerListings />} />
+          <Route path="orders" element={<FarmerOrders />} />
         </Route>
 
         {/* Wholesaler Routes (protected) */}
@@ -138,6 +141,6 @@ export default function App() {
         <Route path="*" element={<AuthRedirect />} />
       </Routes>
       <Toaster position="top-right" />
-    </>
+    </CartProvider>
   )
 }

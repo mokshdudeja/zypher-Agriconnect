@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Leaf, Truck, Shield, Star, Camera } from 'lucide-react'
-import { consumerProducts } from '../../data/mockData'
+import { ArrowRight, Leaf, Truck, Shield, Star, Camera, Loader2 } from 'lucide-react'
+import { db } from '../../lib/firebase'
+import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore'
 
 const categories = [
   { name: 'Grains', emoji: '🌾', color: 'bg-amber-50 border-amber-200' },
@@ -17,7 +19,41 @@ const features = [
 ]
 
 export default function ConsumerHome() {
-  const featured = consumerProducts.slice(0, 4)
+  const [featured, setFeatured] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc'), limit(4)))
+        const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+
+        const profilesSnap = await getDocs(collection(db, 'profiles'))
+        const profilesMap = {}
+        profilesSnap.docs.forEach(doc => { profilesMap[doc.id] = doc.data() })
+
+        const mapped = cropsData.map(item => ({
+          ...item,
+          farmer: profilesMap[item.farmer_id]?.name || 'Local Farmer',
+          image: item.name?.toLowerCase().includes('wheat') ? '🌾' :
+                 item.name?.toLowerCase().includes('rice') ? '🍚' :
+                 item.name?.toLowerCase().includes('corn') ? '🌽' :
+                 item.name?.toLowerCase().includes('mango') ? '🥭' :
+                 item.name?.toLowerCase().includes('tomato') ? '🍅' : '🥦',
+          rating: 4.5,
+          reviews: Math.floor(Math.random() * 100) + 10,
+          originalPrice: Math.round((item.price || 0) * 1.2),
+          organic: true
+        }))
+        setFeatured(mapped)
+      } catch (err) {
+        console.error('Fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchFeatured()
+  }, [])
 
   return (
     <div>
