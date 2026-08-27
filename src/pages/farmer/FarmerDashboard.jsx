@@ -30,32 +30,19 @@ export default function FarmerDashboard() {
       try {
         setLoading(true)
         
-        // 1. Total Listings
         const cropsRef = collection(db, 'crops')
-        const totalQuery = query(cropsRef, where('farmer_id', '==', user.id))
-        const totalSnap = await getCountFromServer(totalQuery)
+        const myCropsQuery = query(cropsRef, where('farmer_id', '==', user.id))
 
-        // 2. Ready Crops
-        const readyQuery = query(cropsRef, where('farmer_id', '==', user.id), where('status', '==', 'Ready'))
-        const readySnap = await getCountFromServer(readyQuery)
+        // Run all queries in parallel
+        const [totalSnap, readySnap, recentSnap, ordersSnap] = await Promise.all([
+          getCountFromServer(myCropsQuery),
+          getCountFromServer(query(cropsRef, where('farmer_id', '==', user.id), where('status', '==', 'Ready'))),
+          getDocs(query(cropsRef, where('farmer_id', '==', user.id), orderBy('created_at', 'desc'), limit(3))),
+          getDocs(query(collection(db, 'orders'), where('farmer_id', '==', user.id))),
+        ])
 
-        // 3. Recent Crops
-        const recentQuery = query(cropsRef, where('farmer_id', '==', user.id), orderBy('created_at', 'desc'), limit(3))
-        const recentSnap = await getDocs(recentQuery)
         const recentCropsList = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-
-        // 4. Pending Orders (Farmer side)
-        // Since Firestore doesn't support easy many-to-many joins, we'll fetch all orders 
-        // and filter. In a real app, this would be a cloud function or a more structured query.
-        const ordersSnap = await getDocs(collection(db, 'orders'))
-        const allOrders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-        
-        // Filter orders where the crop belongs to this farmer
-        // Note: For this to work efficiently, we'll need to fetch the crops first
-        const myCropsSnap = await getDocs(query(cropsRef, where('farmer_id', '==', user.id)))
-        const myCropIds = myCropsSnap.docs.map(d => d.id)
-        
-        const myOrders = allOrders.filter(o => myCropIds.includes(o.listing_id))
+        const myOrders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
         const pendingCount = myOrders.filter(o => o.status === 'Pending').length
         const revenue = myOrders.filter(o => o.status === 'Delivered')
