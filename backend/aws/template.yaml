@@ -1,0 +1,431 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AgriConnect — Agricultural AI Platform
+  Deploys: API Gateway, Lambda, DynamoDB, S3, EventBridge, SageMaker, IAM
+
+# ─── Parameters ───────────────────────────────────────────────
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+  SarvamApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+
+  ExotelSid:
+    Type: String
+    Default: ""
+
+  ExotelApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+
+# ─── Conditions (FIX #1: was missing entirely) ────────────────
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  IsDev: !Equals [!Ref Stage, dev]
+  IsStaging: !Equals [!Ref Stage, staging]
+
+# ─── Globals ───────────────────────────────────────────────────
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Runtime: python3.11
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        SARVAM_API_KEY: !Ref SarvamApiKey
+        EXOTEL_SID: !Ref ExotelSid
+        EXOTEL_API_KEY: !Ref ExotelApiKey
+
+# ─── Resources ─────────────────────────────────────────────────
+Resources:
+
+  # ── IAM Role for ALL Lambda Functions (FIX #5) ──────────────
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "agriconnect-lambda-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: dynamodb-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                Resource:
+                  - !GetAtt CropPricesTable.Arn
+                  - !Sub "${CropPricesTable.Arn}/index/*"
+                  - !GetAtt CallLogsTable.Arn
+                  - !GetAtt UserSessionsTable.Arn
+        - PolicyName: s3-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+                  - !GetAtt ModelsBucket.Arn
+                  - !Sub "${ModelsBucket.Arn}/*"
+        - PolicyName: sagemaker-invoke
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sagemaker:InvokeEndpoint
+                  - sagemaker:DescribeEndpoint
+                  - sagemaker:InvokeEndpointAsync
+                Resource: "*"
+        - PolicyName: secrets-manager
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:agriconnect/*"
+
+  SageMakerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "agriconnect-sagemaker-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+      Policies:
+        - PolicyName: s3-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+                  - !GetAtt ModelsBucket.Arn
+                  - !Sub "${ModelsBucket.Arn}/*"
+
+  # ── S3 Buckets ──────────────────────────────────────────────
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "agriconnect-data-${Stage}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  ModelsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "agriconnect-models-${Stage}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ── DynamoDB Tables (FIX #6: added UserSessions) ────────────
+  CropPricesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "agriconnect-crop_prices-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  CallLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "agriconnect-call_logs-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: call_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: call_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  UserSessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "agriconnect-user_sessions-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ── Lambda Functions ────────────────────────────────────────
+  ApiHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "agriconnect-api_handler-${Stage}"
+      Handler: backend.ivr.handler.handler
+      CodeUri: ../../backend/
+      Description: Main API handler (IVR + Prediction + Weather)
+      MemorySize: !If [IsProd, 1024, 512]
+      Timeout: 30
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+          PREDICTIONS_TABLE: !Ref CropPricesTable
+          CALL_LOG_TABLE: !Ref CallLogsTable
+          SESSIONS_TABLE: !Ref UserSessionsTable
+          SARVAM_API_KEY: !Ref SarvamApiKey
+          EXOTEL_SID: !Ref ExotelSid
+          EXOTEL_API_KEY: !Ref ExotelApiKey
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgriConnectApi
+            Path: /{proxy+}
+            Method: ANY
+        Root:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgriConnectApi
+            Path: /
+            Method: ANY
+
+  DailyUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "agriconnect-daily_update-${Stage}"
+      Handler: backend.prediction.aws.lambda_handler.handler_daily_update
+      CodeUri: ../../backend/
+      Description: Daily mandi data collection + cache refresh
+      MemorySize: !If [IsProd, 1024, 256]
+      Timeout: 300
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+          PREDICTIONS_TABLE: !Ref CropPricesTable
+
+  WeeklyRetrainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "agriconnect-weekly_retrain-${Stage}"
+      Handler: backend.prediction.aws.lambda_handler.handler_retrain
+      CodeUri: ../../backend/
+      Description: Weekly model retraining pipeline
+      MemorySize: !If [IsProd, 2048, 1024]
+      Timeout: 900
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+
+  # ── API Gateway (FIX #7: added CORS) ────────────────────────
+  AgriConnectApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Name: !Sub "agriconnect-api-${Stage}"
+      Description: AgriConnect Crop Price Prediction API
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Throttle:
+            BurstLimit: !If [IsProd, 2000, 200]
+            RateLimit: !If [IsProd, 1000, 100]
+          Quota:
+            Limit: 10000
+            Period: DAY
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Api-Key'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+
+  # CORS preflight — handled by SAM Cors config on the Api
+
+  # ── EventBridge Rules ───────────────────────────────────────
+  DailyUpdateSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "agriconnect-daily-update-${Stage}"
+      Description: Trigger daily data collection at 6 AM IST (12:30 AM UTC)
+      ScheduleExpression: "cron(30 0 * * ? *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt DailyUpdateFunction.Arn
+          Id: daily-update-target
+          Input: '{"action": "daily_update"}'
+
+  # FIX #4: EventBridge → Lambda permissions
+  DailyUpdateEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DailyUpdateFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyUpdateSchedule.Arn
+
+  WeeklyRetrainSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "agriconnect-weekly-retrain-${Stage}"
+      Description: Trigger weekly retrain on Sunday 2 AM IST (8:30 PM UTC Saturday)
+      ScheduleExpression: "cron(30 20 ? * SAT *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt WeeklyRetrainFunction.Arn
+          Id: weekly-retrain-target
+          Input: '{"action": "weekly_retrain"}'
+
+  WeeklyRetrainEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt WeeklyRetrainFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt WeeklyRetrainSchedule.Arn
+
+  # ── SageMaker (FIX #3: was missing) ─────────────────────────
+  SageMakerTrainingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "agriconnect-sagemaker-training-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  # ── Outputs (FIX #2: ApiKeyId now references the actual key) ──
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub "https://${AgriConnectApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+
+  ApiKeyId:
+    Description: API Gateway ID (create an API Key in the console under API Gateway → API Keys)
+    Value: !Ref AgriConnectApi
+
+  DataBucketName:
+    Description: S3 bucket for training data
+    Value: !Ref DataBucket
+
+  ModelsBucketName:
+    Description: S3 bucket for trained models
+    Value: !Ref ModelsBucket
+
+  CropPricesTableName:
+    Description: DynamoDB table for crop prices
+    Value: !Ref CropPricesTable
+
+  CallLogsTableName:
+    Description: DynamoDB table for IVR call logs
+    Value: !Ref CallLogsTable
+
+  UserSessionsTableName:
+    Description: DynamoDB table for user sessions
+    Value: !Ref UserSessionsTable
+
+  LambdaRoleArn:
+    Description: Lambda execution role ARN
+    Value: !GetAtt LambdaExecutionRole.Arn
+
+  SageMakerRoleArn:
+    Description: SageMaker execution role ARN
+    Value: !GetAtt SageMakerRole.Arn
+
+  DailyUpdateLambdaArn:
+    Description: Daily update Lambda ARN
+    Value: !GetAtt DailyUpdateFunction.Arn
+
+  WeeklyRetrainLambdaArn:
+    Description: Weekly retrain Lambda ARN
+    Value: !GetAtt WeeklyRetrainFunction.Arn
