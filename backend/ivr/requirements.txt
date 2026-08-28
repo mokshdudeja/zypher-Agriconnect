@@ -1,0 +1,13 @@
+# API
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6    # Form data parsing
+
+# HTTP
+requests>=2.31.0
+
+# AWS
+boto3>=1.28.0
+
+# Utilities
+python-dotenv>=1.0.0
