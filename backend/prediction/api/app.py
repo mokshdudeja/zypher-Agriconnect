@@ -236,6 +236,9 @@ class PredictionResponse(BaseModel):
     trend: str  # bullish | bearish | stable
     factors: List[str]
     model_weights: Optional[dict] = None
+    model_confidence: Optional[float] = None
+    feature_importance: Optional[dict] = None
+    last_updated: Optional[str] = None
     cached: bool = False
     generated_at: str
 
@@ -589,14 +592,36 @@ async def predict_price(
         if cached:
             return PredictionResponse(**cached)
 
-    # 2. Fetch real weather data from Open-Meteo
+    # 2. Try loading trained ML model first
+    from data_pipeline import predict_with_model, engineer_features, collect_crop_state_data
+    ml_prediction = None
+    try:
+        # Collect recent data and engineer features
+        df = collect_crop_state_data(crop, state, days_back=365)
+        if not df.empty and len(df) >= 30:
+            df_feat = engineer_features(df)
+            if not df_feat.empty:
+                latest = df_feat.iloc[-1].to_dict()
+                ml_prediction = predict_with_model(crop, state, latest)
+    except Exception as e:
+        logger.warning(f"ML model unavailable for {crop}/{state}: {e}")
+
+    # 3. Fetch real weather data from Open-Meteo
     coords = STATE_COORDS[state]
     weather = fetch_weather(coords["lat"], coords["lon"], forecast_days=7)
 
-    # 3. Compute prediction
+    # 4. Compute prediction (rule-based fallback)
     prediction = compute_prediction(crop, state, weather)
 
-    # 4. Cache result
+    # 5. Override with ML prediction if available
+    if ml_prediction:
+        prediction["predicted_price_7d"] = ml_prediction["predicted_price_7d"]
+        prediction["model_confidence"] = ml_prediction["model_confidence"]
+        prediction["feature_importance"] = ml_prediction.get("feature_importance", {})
+        prediction["last_updated"] = ml_prediction.get("last_updated", "")
+        prediction["confidence"] = ml_prediction["model_confidence"]
+
+    # 6. Cache result
     _put_cache(crop, state, prediction)
     _put_memory_cache(crop, state, prediction)
 
