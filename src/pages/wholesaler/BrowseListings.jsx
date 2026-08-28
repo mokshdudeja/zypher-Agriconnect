@@ -11,7 +11,7 @@ export default function BrowseListings() {
   const [search, setSearch] = useState('')
   const [bidModal, setBidModal] = useState(null)
   const [bidAmount, setBidAmount] = useState('')
-  const [listings, setListings] = useState([]
+  const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [lastDoc, setLastDoc] = useState(null)
@@ -223,7 +223,17 @@ export default function BrowseListings() {
           ))}
         </div>
       ) : (
-      hasMore && !loading && (
+        <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200">
+          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-slate-300" />
+          </div>
+          <h3 className="font-display text-xl font-bold text-slate-800">No listings found</h3>
+          <p className="text-slate-500 max-w-xs mx-auto mt-2">Try searching for a different crop or farmer name.</p>
+        </div>
+      )}
+
+      {/* Load More */}
+      {hasMore && !loading && listings.length > 0 && (
         <div className="flex justify-center py-6">
           <button
             onClick={() => fetchListings(true)}
@@ -233,14 +243,6 @@ export default function BrowseListings() {
             {loadingMore ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
             Load More
           </button>
-        </div>
-      )) : (
-        <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-slate-300" />
-          </div>
-          <h3 className="font-display text-xl font-bold text-slate-800">No listings found</h3>
-          <p className="text-slate-500 max-w-xs mx-auto mt-2">Try searching for a different crop or farmer name.</p>
         </div>
       )}
 

@@ -8,7 +8,7 @@ import {
   BarChart3, Activity, Target, Brain, RefreshCw, Search,
 } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_PREDICTION_API_URL || "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev";
 
 const CROPS = [
   { id: "wheat", name: "Wheat", emoji: "🌾", color: "#F59E0B" },

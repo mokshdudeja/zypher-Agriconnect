@@ -368,7 +368,39 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt WeeklyRetrainSchedule.Arn
 
-  # ── SageMaker (FIX #3: was missing) ─────────────────────────
+  # ── Frontend Hosting (S3 Static Website) ───────────────────
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "agriconnect-frontend-${Stage}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub '${FrontendBucket.Arn}/*'
   SageMakerTrainingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -386,6 +418,13 @@ Resources:
 
   # ── Outputs (FIX #2: ApiKeyId now references the actual key) ──
 Outputs:
+  FrontendUrl:
+    Description: S3 static website URL for the frontend
+    Value: !GetAtt FrontendBucket.WebsiteURL
+
+  FrontendBucketName:
+    Description: S3 bucket for frontend static files
+    Value: !Ref FrontendBucket
   ApiUrl:
     Description: API Gateway URL
     Value: !Sub "https://${AgriConnectApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
