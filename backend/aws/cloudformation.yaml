@@ -1,0 +1,523 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  AgriConnect — Full AWS Infrastructure
+  Deploys: S3, DynamoDB, Lambda, API Gateway, EventBridge, SageMaker, IAM
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment stage
+
+  ProjectName:
+    Type: String
+    Default: zypher-agriconnect
+    Description: Project name prefix for all resources
+
+  SarvamApiKey:
+    Type: String
+    Default: ""
+    Description: Sarvam AI API key
+    NoEcho: true
+
+  ExotelSid:
+    Type: String
+    Default: ""
+
+  ExotelApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+
+  PublicApiBase:
+    Type: String
+    Default: ""
+    Description: Public URL for webhooks (e.g. https://api.yourdomain.com)
+
+Mappings:
+  StageConfig:
+    dev:
+      SageMakerInstance: ml.t2.medium
+      ThrottleRate: 100
+      ThrottleBurst: 200
+      DailyLambdaMemory: 256
+      ApiLambdaMemory: 512
+    staging:
+      SageMakerInstance: ml.t2.medium
+      ThrottleRate: 500
+      ThrottleBurst: 1000
+      DailyLambdaMemory: 512
+      ApiLambdaMemory: 1024
+    prod:
+      SageMakerInstance: ml.m5.large
+      ThrottleRate: 1000
+      ThrottleBurst: 2000
+      DailyLambdaMemory: 1024
+      ApiLambdaMemory: 2048
+
+Resources:
+  # ─── S3 Buckets ────────────────────────────────────────────
+
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-data-${Stage}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  ModelsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-models-${Stage}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ─── DynamoDB Tables ───────────────────────────────────────
+
+  CropPricesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-crop_prices-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  CallLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-call_logs-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: call_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: call_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  UserSessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-user_sessions-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ─── IAM Roles ─────────────────────────────────────────────
+
+  SageMakerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-sagemaker-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+      Policies:
+        - PolicyName: s3-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+                  - !GetAtt ModelsBucket.Arn
+                  - !Sub "${ModelsBucket.Arn}/*"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: dynamodb-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                Resource:
+                  - !GetAtt CropPricesTable.Arn
+                  - !GetAtt CallLogsTable.Arn
+                  - !GetAtt UserSessionsTable.Arn
+        - PolicyName: s3-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+                  - !GetAtt ModelsBucket.Arn
+                  - !Sub "${ModelsBucket.Arn}/*"
+        - PolicyName: sagemaker-invoke
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sagemaker:InvokeEndpoint
+                  - sagemaker:DescribeEndpoint
+                Resource: "*"
+        - PolicyName: secrets-manager
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:agriconnect/*"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ─── Lambda Functions ──────────────────────────────────────
+
+  DailyUpdateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-daily_update-${Stage}"
+      Runtime: python3.11
+      Handler: backend.prediction.aws.lambda_handler.handler_daily_update
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 300
+      MemorySize: !FindInMap [StageConfig, !Ref Stage, DailyLambdaMemory]
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+          PREDICTIONS_TABLE: !Ref CropPricesTable
+          CALL_LOG_TABLE: !Ref CallLogsTable
+      Code:
+        S3Bucket: !Sub "${ProjectName}-models-${Stage}"
+        S3Key: lambda/lambda.zip
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  WeeklyRetrainLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-weekly_retrain-${Stage}"
+      Runtime: python3.11
+      Handler: backend.prediction.aws.lambda_handler.handler_retrain
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 600
+      MemorySize: 256
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+      Code:
+        S3Bucket: !Sub "${ProjectName}-models-${Stage}"
+        S3Key: lambda/lambda.zip
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  ApiHandlerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-api_handler-${Stage}"
+      Runtime: python3.11
+      Handler: backend.ivr.handler.handler
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 30
+      MemorySize: !FindInMap [StageConfig, !Ref Stage, ApiLambdaMemory]
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          S3_BUCKET: !Ref DataBucket
+          S3_MODELS_BUCKET: !Ref ModelsBucket
+          PREDICTIONS_TABLE: !Ref CropPricesTable
+          CALL_LOG_TABLE: !Ref CallLogsTable
+          SESSIONS_TABLE: !Ref UserSessionsTable
+          SARVAM_API_KEY: !Ref SarvamApiKey
+          EXOTEL_SID: !Ref ExotelSid
+          EXOTEL_API_KEY: !Ref ExotelApiKey
+          PUBLIC_API_BASE: !Ref PublicApiBase
+      Code:
+        S3Bucket: !Sub "${ProjectName}-models-${Stage}"
+        S3Key: lambda/lambda.zip
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ─── API Gateway ───────────────────────────────────────────
+
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-api-${Stage}"
+      Description: AgriConnect Crop Price Prediction API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      ApiKeySourceType: HEADER
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  ApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: api
+
+  ApiProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ApiResource
+      PathPart: "{proxy+}"
+
+  ProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ApiProxyResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiHandlerLambda.Arn}/invocations"
+
+  RootMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ApiResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiHandlerLambda.Arn}/invocations"
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref RestApi
+      StageName: !Ref Stage
+      DeploymentId: !Ref ApiDeployment
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: "*"
+          ThrottlingRateLimit: !FindInMap [StageConfig, !Ref Stage, ThrottleRate]
+          ThrottlingBurstLimit: !FindInMap [StageConfig, !Ref Stage, ThrottleBurst]
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ProxyMethod
+      - RootMethod
+    Properties:
+      RestApiId: !Ref RestApi
+
+  ApiApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub "${ProjectName}-api-key-${Stage}"
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref RestApi
+          StageName: !Ref Stage
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-usage-plan-${Stage}"
+      Throttle:
+        RateLimit: !FindInMap [StageConfig, !Ref Stage, ThrottleRate]
+        BurstLimit: !FindInMap [StageConfig, !Ref Stage, ThrottleBurst]
+      Quota:
+        Limit: 10000
+        Period: DAY
+      ApiStages:
+        - ApiId: !Ref RestApi
+          Stage: !Ref Stage
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      UsagePlanId: !Ref UsagePlan
+      KeyId: !Ref ApiApiKey
+      KeyType: API_KEY
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ApiHandlerLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/*"
+
+  # ─── EventBridge Rules ─────────────────────────────────────
+
+  DailyUpdateRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${ProjectName}-daily-update-${Stage}"
+      Description: Trigger daily data collection at 6 AM IST (00:00 UTC)
+      ScheduleExpression: "cron(0 0 * * ? *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt DailyUpdateLambda.Arn
+          Id: daily-update-target
+          Input: '{"action": "daily_update"}'
+
+  DailyUpdatePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DailyUpdateLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyUpdateRule.Arn
+
+  WeeklyRetrainRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${ProjectName}-weekly-retrain-${Stage}"
+      Description: Trigger weekly model retraining on Sunday 2 AM IST (20:00 UTC)
+      ScheduleExpression: "cron(0 20 ? * SUN *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt WeeklyRetrainLambda.Arn
+          Id: weekly-retrain-target
+          Input: '{"action": "weekly_retrain"}'
+
+  WeeklyRetrainPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt WeeklyRetrainLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt WeeklyRetrainRule.Arn
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+
+  ApiKeyId:
+    Description: API Key ID (use console to view key value)
+    Value: !Ref ApiApiKey
+
+  DataBucketName:
+    Description: S3 bucket for training data
+    Value: !Ref DataBucket
+
+  ModelsBucketName:
+    Description: S3 bucket for trained models
+    Value: !Ref ModelsBucket
+
+  CropPricesTableName:
+    Description: DynamoDB table for crop prices
+    Value: !Ref CropPricesTable
+
+  CallLogsTableName:
+    Description: DynamoDB table for IVR call logs
+    Value: !Ref CallLogsTable
+
+  UserSessionsTableName:
+    Description: DynamoDB table for user sessions
+    Value: !Ref UserSessionsTable
+
+  DailyUpdateLambdaArn:
+    Description: Daily update Lambda ARN
+    Value: !GetAtt DailyUpdateLambda.Arn
+
+  WeeklyRetrainLambdaArn:
+    Description: Weekly retrain Lambda ARN
+    Value: !GetAtt WeeklyRetrainLambda.Arn
+
+  ApiHandlerLambdaArn:
+    Description: API handler Lambda ARN
+    Value: !GetAtt ApiHandlerLambda.Arn
