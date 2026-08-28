@@ -241,10 +241,11 @@ class PredictionResponse(BaseModel):
 
 
 class WeatherAlert(BaseModel):
-    type: str        # heatwave | heavy_rain | frost | storm
+    type: str        # heatwave | cold_wave | heavy_rain | frost | storm | strong_wind | humidity_extreme
     severity: str    # high | medium | low
     message: str
     date: str
+    advice: Optional[str] = None
 
 
 class DailyForecast(BaseModel):
@@ -934,6 +935,282 @@ async def get_weather(
     _put_weather_cache(district, state, result)
 
     return WeatherResponse(**result)
+
+
+# ─── Enhanced Weather Endpoint (v2) ──────────────────────────────
+
+# Extended state coordinates with the exact values requested
+STATE_COORDS_V2 = {
+    "uttar_pradesh":  {"lat": 26.8467, "lon": 80.9462},
+    "maharashtra":    {"lat": 19.7515, "lon": 75.7139},
+    "punjab":         {"lat": 31.1471, "lon": 75.3412},
+    "haryana":        {"lat": 29.0588, "lon": 76.0856},
+    "rajasthan":      {"lat": 27.0238, "lon": 74.2179},
+    "madhya_pradesh": {"lat": 23.4735, "lon": 77.9470},
+    "gujarat":        {"lat": 22.2587, "lon": 71.1924},
+    "karnataka":      {"lat": 15.3173, "lon": 75.7139},
+    "tamil_nadu":     {"lat": 11.1271, "lon": 78.6569},
+    "west_bengal":    {"lat": 22.9868, "lon": 87.8550},
+    "andhra_pradesh": {"lat": 15.9129, "lon": 79.7400},
+    "bihar":          {"lat": 25.0961, "lon": 85.3131},
+}
+
+
+def _fetch_weather_v2(lat: float, lon: float, days: int = 7) -> Optional[dict]:
+    """
+    Fetch extended weather forecast from Open-Meteo with humidity and wind.
+    """
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,"
+        f"relative_humidity_2m_max,wind_speed_10m_max"
+        f"&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m"
+        f"&timezone=Asia%2FKolkata"
+        f"&forecast_days={days}"
+    )
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+
+        current = data.get("current", {})
+        daily = data.get("daily", {})
+
+        dates = daily.get("time", [])
+        t_max = daily.get("temperature_2m_max", [])
+        t_min = daily.get("temperature_2m_min", [])
+        precip = daily.get("precipitation_sum", [])
+        humidity = daily.get("relative_humidity_2m_max", [])
+        wind = daily.get("wind_speed_10m_max", [])
+
+        forecast = []
+        for i in range(len(dates)):
+            forecast.append({
+                "date": dates[i],
+                "temp_max": t_max[i] if i < len(t_max) else None,
+                "temp_min": t_min[i] if i < len(t_min) else None,
+                "precipitation": precip[i] if i < len(precip) else 0,
+                "humidity": humidity[i] if i < len(humidity) else None,
+                "wind": wind[i] if i < len(wind) else 0,
+            })
+
+        return {
+            "current": {
+                "temp": current.get("temperature_2m"),
+                "humidity": current.get("relative_humidity_2m"),
+                "wind": current.get("wind_speed_10m"),
+                "weather_code": current.get("weather_code", 0),
+            },
+            "forecast": forecast,
+        }
+    except Exception as e:
+        logger.error(f"Open-Meteo v2 fetch failed: {e}")
+        return None
+
+
+def _generate_alerts_v2(forecast: list) -> list:
+    """
+    Generate weather alerts with severity levels.
+    - Heatwave: temp > 42°C → severity "high"
+    - Cold wave: temp < 5°C → severity "high"
+    - Heavy rain: precip > 50mm → severity "medium"
+    - Strong wind: wind > 30 km/h → severity "medium"
+    - Humidity extreme: humidity > 90% → severity "low"
+    """
+    alerts = []
+    advice_map = {
+        "heatwave": "Avoid midday irrigation. Apply mulch to conserve moisture. Provide shade nets for sensitive crops.",
+        "cold_wave": "Cover frost-sensitive crops with protective sheets. Use smudge pots or irrigation for frost protection.",
+        "heavy_rain": "Ensure proper field drainage. Delay fertilizer application. Harvest mature crops before rainfall.",
+        "strong_wind": "Secure greenhouse structures. Stake tall crops. Delay pesticide spraying.",
+        "humidity_extreme": "Monitor for fungal diseases. Improve air circulation. Apply preventive fungicide if needed.",
+    }
+
+    for day in forecast:
+        date = day["date"]
+        t_max = day.get("temp_max")
+        t_min = day.get("temp_min")
+        precip = day.get("precipitation", 0)
+        wind = day.get("wind", 0)
+        humidity = day.get("humidity")
+
+        if t_max is not None and t_max > 42:
+            alerts.append({
+                "type": "heatwave",
+                "severity": "high",
+                "message": f"Heatwave: {t_max}°C expected on {date}.",
+                "date": date,
+                "advice": advice_map["heatwave"],
+            })
+
+        if t_min is not None and t_min < 5:
+            alerts.append({
+                "type": "cold_wave",
+                "severity": "high",
+                "message": f"Cold wave: {t_min}°C expected on {date}.",
+                "date": date,
+                "advice": advice_map["cold_wave"],
+            })
+
+        if precip > 50:
+            alerts.append({
+                "type": "heavy_rain",
+                "severity": "medium",
+                "message": f"Heavy rain: {precip}mm precipitation expected on {date}.",
+                "date": date,
+                "advice": advice_map["heavy_rain"],
+            })
+
+        if wind > 30:
+            alerts.append({
+                "type": "strong_wind",
+                "severity": "medium",
+                "message": f"Strong wind: {wind} km/h expected on {date}.",
+                "date": date,
+                "advice": advice_map["strong_wind"],
+            })
+
+        if humidity is not None and humidity > 90:
+            alerts.append({
+                "type": "humidity_extreme",
+                "severity": "low",
+                "message": f"High humidity: {humidity}% on {date}.",
+                "date": date,
+                "advice": advice_map["humidity_extreme"],
+            })
+
+    return alerts
+
+
+def _generate_farming_recommendations_v2(current: dict, forecast: list, alerts: list, state: str) -> list:
+    """
+    Generate actionable farming recommendations based on weather, alerts, and state context.
+    """
+    recs = []
+    temp = current.get("temp", 25)
+    humidity = current.get("humidity", 50)
+
+    total_rain = sum(d.get("precipitation", 0) for d in forecast)
+    avg_max = sum(d.get("temp_max", 0) or 0 for d in forecast) / max(len(forecast), 1)
+    avg_min = sum(d.get("temp_min", 0) or 0 for d in forecast) / max(len(forecast), 1)
+
+    alert_types = {a["type"] for a in alerts}
+
+    # Temperature-based
+    if avg_max > 40:
+        recs.append("Irrigate crops early morning or late evening to reduce heat stress.")
+        recs.append("Apply mulching to conserve soil moisture.")
+    elif avg_max > 35:
+        recs.append("Ensure adequate water supply during peak afternoon heat.")
+    elif avg_min < 5:
+        recs.append("Cover frost-sensitive crops with protective sheets at night.")
+        recs.append("Avoid irrigation during cold hours to prevent root damage.")
+    elif avg_min < 15:
+        recs.append("Monitor crops for cold stress. Delay sowing of warm-season crops.")
+
+    # Rainfall-based
+    if total_rain > 100:
+        recs.append("Ensure proper field drainage to prevent waterlogging.")
+        recs.append("Delay fertilizer application — nutrients will wash away.")
+    elif total_rain > 50:
+        recs.append("Check drainage channels before expected rainfall.")
+    elif total_rain < 5:
+        recs.append("Rainfall deficit — prioritize irrigation for standing crops.")
+        recs.append("Consider drought-resistant varieties for upcoming sowing.")
+
+    # Humidity-based
+    if humidity > 85:
+        recs.append("High humidity — monitor for fungal diseases (blight, mildew).")
+        recs.append("Apply preventive fungicide spray at vulnerable crop stages.")
+    elif humidity < 30:
+        recs.append("Low humidity — increase irrigation frequency.")
+
+    # Alert-specific
+    if "heatwave" in alert_types:
+        recs.append("Heatwave: avoid transplanting and spraying during peak hours.")
+    if "cold_wave" in alert_types:
+        recs.append("Cold wave: use smudge pots or irrigation for frost protection.")
+    if "heavy_rain" in alert_types:
+        recs.append("Heavy rain: harvest ready crops before rainfall if possible.")
+    if "strong_wind" in alert_types:
+        recs.append("Strong wind: secure greenhouse structures and staked plants.")
+    if "humidity_extreme" in alert_types:
+        recs.append("High humidity: improve air circulation between crop rows.")
+
+    # Seasonal advice
+    month = datetime.now().month
+    if month in (6, 7, 8, 9, 10):
+        recs.append("Kharif season: ensure seedbed preparation for rice, maize, cotton.")
+    elif month in (11, 12, 1, 2, 3):
+        recs.append("Rabi season: ideal time for wheat, potato, mustard sowing.")
+    else:
+        recs.append("Zaid season: consider summer crops like watermelon, cucumber.")
+
+    if not recs:
+        recs.append("Weather conditions are favorable. Continue regular crop management.")
+
+    return recs
+
+
+@app.get("/api/weather/v2")
+async def get_weather_v2(
+    state: str = Query(..., description="State name in snake_case (e.g. uttar_pradesh)"),
+    district: Optional[str] = Query(None, description="District name (e.g. lucknow, pune)"),
+    days: int = Query(7, ge=1, le=16, description="Forecast days (1-16)"),
+):
+    """
+    Enhanced weather endpoint with extended alerts and farming recommendations.
+
+    - **state** (required): Indian state in snake_case
+    - **district** (optional): Falls back to state centroid if omitted
+    - **days** (optional): Forecast horizon, default 7, max 16
+    """
+    state = state.lower().strip()
+    if state not in STATE_COORDS_V2:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported state '{state}'. Supported: {list(STATE_COORDS_V2.keys())}",
+        )
+
+    # Resolve coordinates
+    if district:
+        district = district.lower().strip()
+        coords = DISTRICT_COORDS.get(district, STATE_COORDS_V2[state])
+    else:
+        district = None
+        coords = STATE_COORDS_V2[state]
+
+    # Fetch weather
+    weather_data = _fetch_weather_v2(coords["lat"], coords["lon"], days)
+    if weather_data is None:
+        raise HTTPException(status_code=503, detail="Weather service unavailable. Please try again later.")
+
+    # Generate alerts
+    alerts = _generate_alerts_v2(weather_data["forecast"])
+
+    # Generate recommendations
+    recs = _generate_farming_recommendations_v2(
+        weather_data["current"], weather_data["forecast"], alerts, state,
+    )
+
+    return {
+        "location": {
+            "state": state,
+            "district": district,
+            "coordinates": {"lat": coords["lat"], "lon": coords["lon"]},
+        },
+        "current": {
+            "temp": weather_data["current"]["temp"],
+            "humidity": weather_data["current"]["humidity"],
+            "wind": weather_data["current"]["wind"],
+            "condition": WMO_CODES.get(weather_data["current"]["weather_code"], "Unknown"),
+        },
+        "forecast": weather_data["forecast"],
+        "alerts": alerts,
+        "farming_recommendations": recs,
+        "generated_at": datetime.now().isoformat(),
+    }
 
 
 @app.get("/api/weather/alerts")
