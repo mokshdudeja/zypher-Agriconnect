@@ -593,9 +593,9 @@ async def predict_price(
             return PredictionResponse(**cached)
 
     # 2. Try loading trained ML model first
-    from data_pipeline import predict_with_model, engineer_features, collect_crop_state_data
     ml_prediction = None
     try:
+        from data_pipeline import predict_with_model, engineer_features, collect_crop_state_data
         # Collect recent data and engineer features
         df = collect_crop_state_data(crop, state, days_back=365)
         if not df.empty and len(df) >= 30:

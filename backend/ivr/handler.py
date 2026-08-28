@@ -63,6 +63,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount the prediction app for /api/predict, /api/weather, /api/crop-recommend routes
+try:
+    from prediction.api.app import app as prediction_app
+    # prediction routes already have /api prefix, mount at root
+    for route in prediction_app.routes:
+        if hasattr(route, 'path') and not route.path.startswith('/api/ivr'):
+            app.routes.append(route)
+except ImportError:
+    logger.warning("Could not import prediction API app")
+
 
 # ─── Config ──────────────────────────────────────────────────────
 

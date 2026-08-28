@@ -237,7 +237,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "agriconnect-api_handler-${Stage}"
-      Handler: backend.ivr.handler.handler
+      Handler: ivr.handler.handler
       CodeUri: ../../backend/
       Description: Main API handler (IVR + Prediction + Weather)
       MemorySize: !If [IsProd, 1024, 512]
@@ -272,7 +272,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "agriconnect-daily_update-${Stage}"
-      Handler: backend.prediction.aws.lambda_handler.handler_daily_update
+      Handler: prediction.aws.lambda_handler.handler_daily_update
       CodeUri: ../../backend/
       Description: Daily mandi data collection + cache refresh
       MemorySize: !If [IsProd, 1024, 256]
@@ -289,7 +289,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "agriconnect-weekly_retrain-${Stage}"
-      Handler: backend.prediction.aws.lambda_handler.handler_retrain
+      Handler: prediction.aws.lambda_handler.handler_retrain
       CodeUri: ../../backend/
       Description: Weekly model retraining pipeline
       MemorySize: !If [IsProd, 2048, 1024]
