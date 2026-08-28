@@ -29,3 +29,18 @@ dist-ssr
 setup-firebase-accounts.js
 scratch/
 .genkit/
+
+# AWS
+.aws-sam/
+.aws/
+samconfig.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/

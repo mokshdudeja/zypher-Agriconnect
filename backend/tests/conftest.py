@@ -5,6 +5,7 @@ Shared fixtures for all test modules:
 - FastAPI TestClient / AsyncClient for each app
 - Mock AWS clients (DynamoDB, S3, SageMaker, Lambda)
 - Factory fixtures for crop data and mandi prices
+- Override fixtures: override_auth, override_db
 - Auto-reset dependency overrides after each test
 """
 
@@ -15,11 +16,13 @@ import hashlib
 import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Generator
+from typing import Generator, AsyncGenerator
 from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 
 # ─── Ensure backend is importable ────────────────────────────────
 
@@ -88,6 +91,14 @@ def ivr_client_fresh(ivr_app) -> TestClient:
     return TestClient(ivr_app, raise_server_exceptions=False)
 
 
+@pytest.fixture
+async def ivr_async_client(ivr_app) -> AsyncGenerator[AsyncClient, None]:
+    """Async TestClient for the IVR app."""
+    transport = ASGITransport(app=ivr_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
 # ─── Prediction App Fixtures ────────────────────────────────────
 
 @pytest.fixture(scope="session")
@@ -109,6 +120,14 @@ def prediction_client_fresh(prediction_app) -> TestClient:
     return TestClient(prediction_app, raise_server_exceptions=False)
 
 
+@pytest.fixture
+async def prediction_async_client(prediction_app) -> AsyncGenerator[AsyncClient, None]:
+    """Async TestClient for the Prediction app."""
+    transport = ASGITransport(app=prediction_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
 # ─── Sarvam App Fixtures ────────────────────────────────────────
 
 @pytest.fixture(scope="session")
@@ -122,6 +141,14 @@ def sarvam_app():
 def sarvam_client(sarvam_app) -> TestClient:
     """Sync TestClient for the Sarvam app."""
     return TestClient(sarvam_app, raise_server_exceptions=False)
+
+
+@pytest.fixture
+async def sarvam_async_client(sarvam_app) -> AsyncGenerator[AsyncClient, None]:
+    """Async TestClient for the Sarvam app."""
+    transport = ASGITransport(app=sarvam_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
 
 
 # ─── Mock AWS Clients ───────────────────────────────────────────
@@ -352,6 +379,74 @@ def prediction_memory_cache():
     _memory_cache.clear()
     yield _memory_cache
     _memory_cache.clear()
+
+
+# ─── Override Fixtures ──────────────────────────────────────────
+
+@pytest.fixture
+def override_db():
+    """Override database dependencies for testing."""
+    from backend.prediction.api import app as pred_app
+    mock_table = MagicMock()
+    mock_table.get_item.return_value = {"Item": None}
+    mock_table.put_item.return_value = {}
+    mock_table.query.return_value = {"Items": []}
+    mock_table.scan.return_value = {"Items": []}
+
+    # Override DynamoDB dependency if the app has one
+    if hasattr(pred_app, "dependency_overrides"):
+        original_overrides = pred_app.dependency_overrides.copy()
+        yield mock_table
+        pred_app.dependency_overrides.clear()
+        pred_app.dependency_overrides.update(original_overrides)
+    else:
+        yield mock_table
+
+
+@pytest.fixture
+def override_auth():
+    """Override authentication dependencies for testing."""
+    from backend.prediction.api import app as pred_app
+
+    def mock_get_current_user():
+        return {
+            "user_id": "test-user-001",
+            "email": "test@agriconnect.in",
+            "role": "farmer",
+            "phone": "+919876543210",
+        }
+
+    # Override auth dependency if the app has one
+    if hasattr(pred_app, "dependency_overrides"):
+        original_overrides = pred_app.dependency_overrides.copy()
+        # Look for auth-related dependencies to override
+        for dep_name in list(pred_app.dependency_overrides.keys()):
+            if "auth" in str(dep_name).lower() or "user" in str(dep_name).lower():
+                pred_app.dependency_overrides[dep_name] = mock_get_current_user
+        yield mock_get_current_user
+        pred_app.dependency_overrides.clear()
+        pred_app.dependency_overrides.update(original_overrides)
+    else:
+        yield mock_get_current_user
+
+
+@pytest.fixture
+def mock_db_session():
+    """Mock database session for SQLAlchemy-based apps."""
+    session = MagicMock()
+    session.query = MagicMock()
+    session.add = MagicMock()
+    session.commit = MagicMock()
+    session.rollback = MagicMock()
+    session.close = MagicMock()
+    session.execute = MagicMock()
+    session.scalar = MagicMock()
+    session.get = MagicMock()
+    session.merge = MagicMock()
+    session.delete = MagicMock()
+    session.flush = MagicMock()
+    session.expire_all = MagicMock()
+    return session
 
 
 # ─── Data Pipeline Fixtures ─────────────────────────────────────
