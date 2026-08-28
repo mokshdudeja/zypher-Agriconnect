@@ -39,6 +39,7 @@ import Reports from './pages/admin/Reports'
 
 // Shared Pages
 import QRScannerPage from './pages/shared/QRScannerPage'
+import CropPricePrediction from './pages/shared/CropPricePrediction'
 
 /* Smart redirect: logged in → dashboard, logged out → login */
 function AuthRedirect() {
@@ -134,6 +135,13 @@ export default function App() {
         <Route path="/scan" element={
           <ProtectedRoute allowedRoles={['consumer', 'wholesaler', 'farmer']}>
             <QRScannerPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Crop Price Prediction (all roles) */}
+        <Route path="/predictions" element={
+          <ProtectedRoute allowedRoles={['consumer', 'wholesaler', 'farmer', 'admin']}>
+            <CropPricePrediction />
           </ProtectedRoute>
         } />
 

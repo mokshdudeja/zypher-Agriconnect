@@ -1,0 +1,36 @@
+{
+  "Rules": [
+    {
+      "Name": "agriconnect-daily-update",
+      "Description": "Trigger daily data collection and prediction refresh at 6 AM IST",
+      "ScheduleExpression": "cron(0 0 * * ? *)",
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Id": "daily-update-lambda",
+          "Arn": "arn:aws:lambda:ap-south-1:ACCOUNT:function:agriconnect-daily-update",
+          "Input": "{\"action\": \"daily_update\"}"
+        }
+      ]
+    },
+    {
+      "Name": "agriconnect-weekly-retrain",
+      "Description": "Trigger weekly model retraining on Sundays at 2 AM IST",
+      "ScheduleExpression": "cron(0 20 ? * SUN *)",
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Id": "weekly-retrain-lambda",
+          "Arn": "arn:aws:lambda:ap-south-1:ACCOUNT:function:agriconnect-retrain",
+          "Input": "{\"action\": \"retrain\"}"
+        }
+      ]
+    }
+  ],
+  "Notes": {
+    "daily_update": "Cron uses UTC. 0 0 UTC = 5:30 AM IST (6 AM IST during IST)",
+    "weekly_retrain": "0 20 UTC = 1:30 AM IST Sunday (2 AM IST)",
+    "replace_ACCOUNT": "Replace with your AWS account ID",
+    "lambda_arns": "Update ARNs after deploying Lambda functions"
+  }
+}
