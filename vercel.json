@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/predict/(.*)",
+      "destination": "https://agriconnect-api.execute-api.ap-south-1.amazonaws.com/prod/api/predict/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
