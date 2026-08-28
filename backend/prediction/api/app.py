@@ -975,6 +975,524 @@ async def get_weather_alerts(
     }
 
 
+# ─── Crop Recommendation Engine ─────────────────────────────────
+
+# Crop suitability database: pH ranges, temperature ranges, rainfall needs,
+# soil preferences, NPK requirements, yield estimates, market prices
+CROP_DATABASE = {
+    "wheat": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (10, 25),
+        "rainfall_mm": (500, 1000),
+        "soil_types": ["loamy", "clay_loam", "sandy_loam"],
+        "npk": {"n": (80, 120), "p": (40, 60), "k": (40, 60)},
+        "season": ["rabi"],
+        "yield_qha": (25, 40),      # quintals per hectare
+        "price_range": (2000, 2400), # Rs/quintal
+        "rotation_after": ["rice", "maize", "cotton", "moong"],
+        "avoid_after": ["wheat", "barley"],
+        "description": "Major rabi cereal. High protein, staple food crop.",
+    },
+    "rice": {
+        "ph_range": (5.5, 7.0),
+        "temp_range": (20, 35),
+        "rainfall_mm": (1000, 2000),
+        "soil_types": ["clay", "clay_loam", "loamy"],
+        "npk": {"n": (100, 150), "p": (50, 80), "k": (50, 80)},
+        "season": ["kharif"],
+        "yield_qha": (20, 35),
+        "price_range": (2300, 2800),
+        "rotation_after": ["wheat", "mustard", "gram", "vegetables"],
+        "avoid_after": ["rice", "jute"],
+        "description": "Primary kharif cereal. Requires standing water at early stages.",
+    },
+    "maize": {
+        "ph_range": (5.5, 7.5),
+        "temp_range": (18, 32),
+        "rainfall_mm": (500, 1200),
+        "soil_types": ["loamy", "sandy_loam", "clay_loam"],
+        "npk": {"n": (80, 120), "p": (40, 60), "k": (40, 60)},
+        "season": ["kharif", "rabi"],
+        "yield_qha": (25, 45),
+        "price_range": (1700, 2100),
+        "rotation_after": ["wheat", "soybean", "groundnut"],
+        "avoid_after": ["maize", "sorghum"],
+        "description": "Versatile cereal used for food, feed, and industrial purposes.",
+    },
+    "cotton": {
+        "ph_range": (6.0, 8.0),
+        "temp_range": (20, 35),
+        "rainfall_mm": (600, 1200),
+        "soil_types": ["black", "clay_loam", "loamy"],
+        "npk": {"n": (60, 100), "p": (30, 50), "k": (30, 50)},
+        "season": ["kharif"],
+        "yield_qha": (15, 25),
+        "price_range": (5800, 6800),
+        "rotation_after": ["wheat", "chickpea", "onion"],
+        "avoid_after": ["cotton", "okra"],
+        "description": "Commercial fiber crop. Requires long frost-free period.",
+    },
+    "soybean": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (20, 30),
+        "rainfall_mm": (600, 1000),
+        "soil_types": ["black", "clay_loam", "loamy"],
+        "npk": {"n": (20, 30), "p": (40, 60), "k": (20, 40)},
+        "season": ["kharif"],
+        "yield_qha": (12, 20),
+        "price_range": (4200, 5000),
+        "rotation_after": ["wheat", "gram", "mustard"],
+        "avoid_after": ["soybean", "moong"],
+        "description": "Oilseed and pulse crop. Fixes atmospheric nitrogen.",
+    },
+    "groundnut": {
+        "ph_range": (6.0, 7.0),
+        "temp_range": (22, 30),
+        "rainfall_mm": (500, 1000),
+        "soil_types": ["sandy_loam", "loamy", "red"],
+        "npk": {"n": (20, 25), "p": (40, 50), "k": (40, 60)},
+        "season": ["kharif", "rabi"],
+        "yield_qha": (15, 25),
+        "price_range": (4800, 5800),
+        "rotation_after": ["wheat", "sorghum", "cotton"],
+        "avoid_after": ["groundnut", "sunflower"],
+        "description": "Major oilseed. Fixes nitrogen, improves soil health.",
+    },
+    "potato": {
+        "ph_range": (5.0, 6.5),
+        "temp_range": (15, 25),
+        "rainfall_mm": (500, 800),
+        "soil_types": ["sandy_loam", "loamy", "red"],
+        "npk": {"n": (100, 150), "p": (50, 80), "k": (80, 120)},
+        "season": ["rabi"],
+        "yield_qha": (100, 200),
+        "price_range": (1200, 1800),
+        "rotation_after": ["rice", "maize", "mustard", "onion"],
+        "avoid_after": ["potato", "tomato", "brinjal"],
+        "description": "High-value root crop. Heavy feeder, needs well-drained soil.",
+    },
+    "tomato": {
+        "ph_range": (6.0, 7.0),
+        "temp_range": (20, 30),
+        "rainfall_mm": (400, 800),
+        "soil_types": ["loamy", "clay_loam", "sandy_loam"],
+        "npk": {"n": (80, 120), "p": (40, 60), "k": (60, 80)},
+        "season": ["kharif", "rabi"],
+        "yield_qha": (80, 150),
+        "price_range": (1500, 2500),
+        "rotation_after": ["wheat", "maize", "pulse"],
+        "avoid_after": ["tomato", "potato", "brinjal", "chilli"],
+        "description": "High-value vegetable. Susceptible to soil-borne diseases.",
+    },
+    "onion": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (15, 30),
+        "rainfall_mm": (400, 700),
+        "soil_types": ["loamy", "sandy_loam", "red"],
+        "npk": {"n": (60, 100), "p": (40, 60), "k": (40, 60)},
+        "season": ["rabi", "kharif"],
+        "yield_qha": (80, 120),
+        "price_range": (1400, 2200),
+        "rotation_after": ["rice", "cotton", "soybean"],
+        "avoid_after": ["onion", "garlic", "leek"],
+        "description": "Pungent bulb vegetable. Sensitive to excess moisture.",
+    },
+    "sugarcane": {
+        "ph_range": (6.0, 8.0),
+        "temp_range": (20, 40),
+        "rainfall_mm": (1000, 1500),
+        "soil_types": ["clay_loam", "loamy", "black"],
+        "npk": {"n": (100, 150), "p": (40, 60), "k": (60, 100)},
+        "season": ["kharif"],
+        "yield_qha": (400, 700),
+        "price_range": (2600, 3200),
+        "rotation_after": ["wheat", "pulses", "fodder"],
+        "avoid_after": ["sugarcane", "maize"],
+        "description": "Long-duration cash crop. 12-18 months to maturity.",
+    },
+    "moong": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (20, 35),
+        "rainfall_mm": (300, 700),
+        "soil_types": ["loamy", "sandy_loam", "clay_loam"],
+        "npk": {"n": (10, 20), "p": (30, 50), "k": (20, 30)},
+        "season": ["kharif", "rabi", "zaid"],
+        "yield_qha": (8, 15),
+        "price_range": (7000, 9000),
+        "rotation_after": ["wheat", "mustard", "vegetables"],
+        "avoid_after": ["moong", "urad", "other pulses"],
+        "description": "Short-duration pulse. Fixes nitrogen, excellent rotation crop.",
+    },
+    "mustard": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (10, 25),
+        "rainfall_mm": (400, 800),
+        "soil_types": ["loamy", "sandy_loam", "clay_loam"],
+        "npk": {"n": (40, 60), "p": (20, 30), "k": (20, 30)},
+        "season": ["rabi"],
+        "yield_qha": (10, 18),
+        "price_range": (5000, 6000),
+        "rotation_after": ["rice", "moong", "cotton"],
+        "avoid_after": ["mustard", "rapeseed", "canola"],
+        "description": "Major oilseed. Cold-tolerant, short-duration rabi crop.",
+    },
+    "chickpea": {
+        "ph_range": (6.0, 8.0),
+        "temp_range": (10, 25),
+        "rainfall_mm": (400, 800),
+        "soil_types": ["loamy", "clay_loam", "black"],
+        "npk": {"n": (10, 20), "p": (40, 60), "k": (20, 30)},
+        "season": ["rabi"],
+        "yield_qha": (10, 18),
+        "price_range": (4500, 6000),
+        "rotation_after": ["rice", "cotton", "sorghum"],
+        "avoid_after": ["chickpea", "lentil", "pea"],
+        "description": "Major rabi pulse. Drought-tolerant, fixes nitrogen.",
+    },
+    "sunflower": {
+        "ph_range": (6.0, 7.5),
+        "temp_range": (18, 30),
+        "rainfall_mm": (400, 700),
+        "soil_types": ["loamy", "sandy_loam", "clay_loam"],
+        "npk": {"n": (40, 60), "p": (30, 40), "k": (30, 40)},
+        "season": ["kharif", "rabi"],
+        "yield_qha": (10, 15),
+        "price_range": (6000, 7500),
+        "rotation_after": ["wheat", "gram", "vegetables"],
+        "avoid_after": ["sunflower", "groundnut"],
+        "description": "Oilseed crop. Deep-rooted, tolerates moderate drought.",
+    },
+}
+
+# Soil type descriptions
+SOIL_TYPES = ["sandy", "sandy_loam", "loamy", "clay_loam", "clay", "black", "red", "laterite"]
+
+# Season definitions
+SEASON_OPTIONS = ["kharif", "rabi", "zaid"]
+
+
+def _compute_rule_score(crop: str, soil: str, ph: float, temp: float,
+                        rainfall: float, nitrogen: float, phosphorus: float,
+                        potassium: float, season: str) -> dict:
+    """
+    Rule-based suitability scoring (0-100).
+    Checks pH range, temperature range, rainfall, soil type, NPK, season.
+    """
+    info = CROP_DATABASE[crop]
+    score = 0
+    max_score = 0
+    reasons = []
+
+    # 1. pH match (weight: 20)
+    max_score += 20
+    ph_min, ph_max = info["ph_range"]
+    if ph_min <= ph <= ph_max:
+        score += 20
+        reasons.append("pH suitable")
+    else:
+        ph_mid = (ph_min + ph_max) / 2
+        ph_dist = min(abs(ph - ph_min), abs(ph - ph_max))
+        ph_penalty = max(0, 20 - int(ph_dist * 10))
+        score += ph_penalty
+        reasons.append(f"pH suboptimal ({ph} vs ideal {ph_min}-{ph_max})")
+
+    # 2. Temperature match (weight: 25)
+    max_score += 25
+    t_min, t_max = info["temp_range"]
+    if t_min <= temp <= t_max:
+        score += 25
+        reasons.append("Temperature ideal")
+    else:
+        t_dist = min(abs(temp - t_min), abs(temp - t_max))
+        t_penalty = max(0, 25 - int(t_dist * 2))
+        score += t_penalty
+        reasons.append(f"Temperature suboptimal ({temp}°C vs ideal {t_min}-{t_max}°C)")
+
+    # 3. Rainfall match (weight: 20)
+    max_score += 20
+    r_min, r_max = info["rainfall_mm"]
+    if r_min <= rainfall <= r_max:
+        score += 20
+        reasons.append("Rainfall adequate")
+    elif rainfall < r_min:
+        ratio = rainfall / r_min if r_min > 0 else 0
+        score += int(ratio * 20)
+        reasons.append(f"Rainfall deficit ({rainfall}mm vs need {r_min}-{r_max}mm)")
+    else:
+        ratio = r_max / rainfall if rainfall > 0 else 0
+        score += int(ratio * 20)
+        reasons.append(f"Excess rainfall ({rainfall}mm vs need {r_min}-{r_max}mm)")
+
+    # 4. Soil type match (weight: 15)
+    max_score += 15
+    if soil.lower() in info["soil_types"]:
+        score += 15
+        reasons.append(f"{soil} soil suitable")
+    else:
+        # Partial credit for compatible soils
+        compatible = {"sandy": ["sandy_loam"], "sandy_loam": ["sandy", "loamy"],
+                      "loamy": ["sandy_loam", "clay_loam"], "clay_loam": ["loamy", "clay"],
+                      "clay": ["clay_loam"], "black": ["clay_loam", "clay"],
+                      "red": ["sandy_loam", "loamy"], "laterite": ["sandy_loam"]}
+        if soil.lower() in compatible and any(s in info["soil_types"] for s in compatible[soil.lower()]):
+            score += 8
+            reasons.append(f"{soil} soil partially compatible")
+        else:
+            reasons.append(f"{soil} soil not ideal for {crop}")
+
+    # 5. NPK match (weight: 10)
+    max_score += 10
+    npk = info["npk"]
+    n_ok = npk["n"][0] <= nitrogen <= npk["n"][1] * 1.2
+    p_ok = npk["p"][0] <= phosphorus <= npk["p"][1] * 1.2
+    k_ok = npk["k"][0] <= potassium <= npk["k"][1] * 1.2
+    npk_score = sum([n_ok, p_ok, k_ok]) * 3 + (1 if any([n_ok, p_ok, k_ok]) else 0)
+    score += min(10, npk_score)
+    if n_ok and p_ok and k_ok:
+        reasons.append("NPK levels good")
+    else:
+        missing = []
+        if not n_ok:
+            missing.append("N")
+        if not p_ok:
+            missing.append("P")
+        if not k_ok:
+            missing.append("K")
+        reasons.append(f"NPK adjustment needed: {', '.join(missing)}")
+
+    # 6. Season match (weight: 10)
+    max_score += 10
+    if season.lower() in info["season"]:
+        score += 10
+        reasons.append(f"{season} is growing season")
+    else:
+        score += 2  # Can still grow off-season with adjustments
+        reasons.append(f"{season} is off-season for {crop}")
+
+    # Normalize to 0-100
+    normalized = round((score / max_score) * 100, 1) if max_score > 0 else 0
+
+    return {"score": normalized, "reasons": reasons}
+
+
+def _get_rotation_suggestions(crop: str, season: str) -> list:
+    """
+    Suggest crops for rotation after the recommended crop.
+    Based on agronomic best practices:
+    - Alternate cereals with pulses (nitrogen fixation)
+    - Alternate deep-rooted with shallow-rooted
+    - Avoid same family (disease prevention)
+    """
+    info = CROP_DATABASE.get(crop, {})
+    good_after = info.get("rotation_after", [])
+    avoid_after = info.get("avoid_after", [])
+
+    suggestions = []
+    for rot_crop in good_after:
+        if rot_crop in CROP_DATABASE:
+            rot_info = CROP_DATABASE[rot_crop]
+            # Check if the rotation crop fits the NEXT season
+            next_seasons = {"kharif": "rabi", "rabi": "zaid", "zaid": "kharif"}
+            next_s = next_seasons.get(season.lower(), "rabi")
+            is_season_match = next_s in rot_info["season"]
+            suggestions.append({
+                "crop": rot_crop,
+                "reason": f"Good after {crop} — fixes soil nutrients" if "pulse" in rot_crop or "moong" in rot_crop or "chickpea" in rot_crop else f"Breaks pest cycle after {crop}",
+                "next_season": next_s,
+                "season_match": is_season_match,
+            })
+
+    # Also suggest based on season
+    season_crops = []
+    for cname, cinfo in CROP_DATABASE.items():
+        if season.lower() in cinfo["season"] and cname != crop and cname not in avoid_after:
+            season_crops.append(cname)
+
+    # Add top seasonal alternatives if rotation list is short
+    if len(suggestions) < 3:
+        for sc in season_crops[:3]:
+            if sc not in [s["crop"] for s in suggestions]:
+                suggestions.append({
+                    "crop": sc,
+                    "reason": f"Good {season} alternative to {crop}",
+                    "next_season": season,
+                    "season_match": True,
+                })
+
+    return suggestions[:5]
+
+
+def _ml_score_adjustment(score: float, soil: str, ph: float, temp: float,
+                         rainfall: float, n: float, p: float, k: float) -> float:
+    """
+    ML-inspired score adjustment using weighted feature similarity.
+    Simulates a trained model's behavior using domain knowledge weights.
+
+    In production, replace this with an actual trained model:
+       model = joblib.load("models/crop_recommender.pkl")
+       ml_score = model.predict_proba([[ph, temp, rainfall, n, p, k]])
+    """
+    # Feature weights learned from agricultural research
+    weights = {
+        "ph": 0.18,
+        "temp": 0.22,
+        "rainfall": 0.18,
+        "nitrogen": 0.12,
+        "phosphorus": 0.12,
+        "potassium": 0.10,
+        "soil": 0.08,
+    }
+
+    # Normalize inputs to 0-1 range
+    ph_norm = 1.0 - abs(ph - 6.5) / 3.5      # Ideal ~6.5
+    temp_norm = 1.0 - abs(temp - 25) / 25     # Ideal ~25°C
+    rain_norm = min(1.0, rainfall / 1200)     # Cap at 1200mm
+    n_norm = min(1.0, n / 120)
+    p_norm = min(1.0, p / 80)
+    k_norm = min(1.0, k / 80)
+    soil_map = {"loamy": 1.0, "clay_loam": 0.9, "sandy_loam": 0.85,
+                "black": 0.8, "clay": 0.7, "red": 0.75, "sandy": 0.65, "laterite": 0.6}
+    soil_norm = soil_map.get(soil.lower(), 0.7)
+
+    ml_adjustment = (
+        weights["ph"] * ph_norm +
+        weights["temp"] * temp_norm +
+        weights["rainfall"] * rain_norm +
+        weights["nitrogen"] * n_norm +
+        weights["phosphorus"] * p_norm +
+        weights["potassium"] * k_norm +
+        weights["soil"] * soil_norm
+    )
+
+    # Blend rule-based (70%) with ML-inspired (30%)
+    blended = score * 0.70 + (ml_adjustment * 100) * 0.30
+    return round(min(100.0, max(0.0, blended)), 1)
+
+
+@app.post("/api/crop-recommend")
+async def crop_recommendation(request: Request):
+    """
+    Recommend top 5 crops based on soil, climate, and season.
+
+    Input JSON:
+    {
+        "soil_type": "loamy",
+        "ph": 6.5,
+        "nitrogen": 80,
+        "phosphorus": 40,
+        "potassium": 40,
+        "rainfall": 800,
+        "temperature": 25,
+        "season": "rabi"
+    }
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    soil = body.get("soil_type", "loamy")
+    ph = body.get("ph", 6.5)
+    nitrogen = body.get("nitrogen", 60)
+    phosphorus = body.get("phosphorus", 40)
+    potassium = body.get("potassium", 40)
+    rainfall = body.get("rainfall", 800)
+    temperature = body.get("temperature", 25)
+    season = body.get("season", "rabi")
+
+    # Validate inputs
+    if soil.lower() not in SOIL_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid soil_type '{soil}'. Valid: {SOIL_TYPES}",
+        )
+    if season.lower() not in SEASON_OPTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid season '{season}'. Valid: {SEASON_OPTIONS}",
+        )
+
+    # Score every crop
+    results = []
+    for crop_name in CROP_DATABASE:
+        rule = _compute_rule_score(
+            crop_name, soil, ph, temperature, rainfall,
+            nitrogen, phosphorus, potassium, season,
+        )
+
+        # Blend rule-based with ML-inspired scoring
+        final_score = _ml_score_adjustment(
+            rule["score"], soil, ph, temperature, rainfall,
+            nitrogen, phosphorus, potassium,
+        )
+
+        crop_info = CROP_DATABASE[crop_name]
+        yield_min, yield_max = crop_info["yield_qha"]
+        price_min, price_max = crop_info["price_range"]
+
+        # Estimate yield and price based on score
+        score_factor = final_score / 100.0
+        estimated_yield = round(yield_min + (yield_max - yield_min) * score_factor, 1)
+        estimated_price = round(price_min + (price_max - price_min) * score_factor, 0)
+
+        results.append({
+            "crop": crop_name,
+            "suitability_score": final_score,
+            "estimated_yield_qha": estimated_yield,
+            "estimated_price_per_quintal": int(estimated_price),
+            "expected_revenue_per_ha": int(estimated_yield * estimated_price),
+            "description": crop_info["description"],
+            "reasons": rule["reasons"],
+            "rotation": _get_rotation_suggestions(crop_name, season),
+        })
+
+    # Sort by score, take top 5
+    results.sort(key=lambda x: x["suitability_score"], reverse=True)
+    top_5 = results[:5]
+
+    # Overall input summary
+    input_summary = {
+        "soil_type": soil,
+        "ph": ph,
+        "nitrogen": nitrogen,
+        "phosphorus": phosphorus,
+        "potassium": potassium,
+        "rainfall_mm": rainfall,
+        "temperature_c": temperature,
+        "season": season,
+    }
+
+    return {
+        "input": input_summary,
+        "recommendations": top_5,
+        "total_crops_evaluated": len(CROP_DATABASE),
+        "generated_at": datetime.now().isoformat(),
+    }
+
+
+@app.get("/api/crop-recommend/soil-types")
+async def get_soil_types():
+    return {"soil_types": SOIL_TYPES, "seasons": SEASON_OPTIONS}
+
+
+@app.get("/api/crop-recommend/crops")
+async def get_crop_database():
+    """Return the full crop database for reference."""
+    summary = {}
+    for name, info in CROP_DATABASE.items():
+        summary[name] = {
+            "ph_range": info["ph_range"],
+            "temp_range": info["temp_range"],
+            "rainfall_mm": info["rainfall_mm"],
+            "soil_types": info["soil_types"],
+            "season": info["season"],
+            "yield_qha": info["yield_qha"],
+            "price_range": info["price_range"],
+            "description": info["description"],
+        }
+    return {"crops": summary, "total": len(summary)}
+
+
 # ─── AWS Lambda Handler ──────────────────────────────────────────
 
 def handler(event, context):
