@@ -309,7 +309,7 @@ Resources:
       Name: !Sub "agriconnect-api-${Stage}"
       Description: AgriConnect Crop Price Prediction API
       Auth:
-        ApiKeyRequired: true
+        ApiKeyRequired: false
         UsagePlan:
           CreateUsagePlan: PER_API
           Throttle:
@@ -322,6 +322,7 @@ Resources:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization,X-Api-Key'"
         AllowOrigin: "'*'"
+        AllowCredentials: true
         MaxAge: "'600'"
 
   # CORS preflight — handled by SAM Cors config on the Api
