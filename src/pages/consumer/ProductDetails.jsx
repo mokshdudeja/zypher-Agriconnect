@@ -6,6 +6,7 @@ import { db } from '../../lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import { useCart } from '../../context/CartContext'
 import { toast } from 'react-hot-toast'
+import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 export default function ProductDetails() {
   const { id } = useParams()
@@ -45,15 +46,8 @@ export default function ProductDetails() {
           id: docSnap.id,
           ...data,
           farmer: farmerName,
-          image: data.name?.toLowerCase().includes('wheat') ? '🌾' :
-                 data.name?.toLowerCase().includes('rice') ? '🍚' :
-                 data.name?.toLowerCase().includes('corn') ? '🌽' :
-                 data.name?.toLowerCase().includes('mango') ? '🥭' :
-                 data.name?.toLowerCase().includes('tomato') ? '🍅' :
-                 data.name?.toLowerCase().includes('potato') ? '🥔' :
-                 data.name?.toLowerCase().includes('onion') ? '🧅' :
-                 data.name?.toLowerCase().includes('chilli') ? '🌶️' :
-                 data.name?.toLowerCase().includes('spinach') ? '🥬' : '🥦',
+          image: getCropImageUrl(data.name),
+          emoji: getCropEmoji(data.name),
           rating: 4.5,
           reviews: Math.floor(Math.random() * 100) + 10,
           originalPrice: Math.round((data.price || 0) * 1.2),
@@ -130,8 +124,11 @@ export default function ProductDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in-up">
         {/* Product Image */}
         <div className="relative">
-          <div className="aspect-square bg-gradient-to-br from-leaf-50 via-earth-50 to-sky-50 rounded-3xl flex items-center justify-center text-[120px] shadow-card">
-            {product.image}
+          <div className="aspect-square bg-gradient-to-br from-leaf-50 via-earth-50 to-sky-50 rounded-3xl overflow-hidden shadow-card">
+            <img src={product.image} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+            <div className="w-full h-full items-center justify-center text-[120px] hidden">
+              {product.emoji}
+            </div>
           </div>
           <button
             onClick={() => setLiked(!liked)}

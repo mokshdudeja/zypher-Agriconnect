@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Leaf, Truck, Shield, Star, Camera, Cloud, Thermometer, Droplets, Wind, Sprout } from 'lucide-react'
 import { db } from '../../lib/firebase'
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore'
+import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 const categories = [
   { name: 'Grains', emoji: '🌾', color: 'bg-harvest-50 border-harvest-200' },
@@ -18,10 +19,7 @@ const features = [
   { icon: Shield, title: 'Quality Assured', desc: '100% certified organic options', color: 'text-harvest-600 bg-harvest-50' },
 ]
 
-const CROP_EMOJIS = {
-  wheat: '🌾', rice: '🍚', maize: '🌽', cotton: '☁️', sugarcane: '🎋',
-  soybean: '🫘', potato: '🥔', tomato: '🍅', onion: '🧅', groundnut: '🥜',
-}
+
 
 export default function ConsumerHome() {
   const [featured, setFeatured] = useState([])
@@ -42,7 +40,8 @@ export default function ConsumerHome() {
         const mapped = cropsData.map(item => ({
           ...item,
           farmer: profilesMap[item.farmer_id]?.name || 'Local Farmer',
-          image: CROP_EMOJIS[item.name?.toLowerCase()] || '🥦',
+          image: getCropImageUrl(item.name),
+          emoji: getCropEmoji(item.name),
           rating: (4.0 + Math.random() * 0.9).toFixed(1),
           reviews: Math.floor(Math.random() * 100) + 10,
           originalPrice: Math.round((item.price || 0) * 1.2),
@@ -233,8 +232,11 @@ export default function ConsumerHome() {
                 to={`/consumer/products/${product.id}`}
                 className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden group animate-fade-in-up"
               >
-                <div className="h-40 bg-gradient-to-br from-leaf-50 to-earth-50 flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-500">
-                  {product.image}
+                <div className="h-40 bg-gradient-to-br from-leaf-50 to-earth-50 overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <div className="w-full h-full items-center justify-center text-5xl hidden">
+                    {product.emoji}
+                  </div>
                 </div>
                 <div className="p-4">
                   {product.organic && (

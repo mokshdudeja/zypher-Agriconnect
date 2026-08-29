@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'fire
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-hot-toast'
+import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 export default function FarmerListings() {
   const { user } = useAuth()
@@ -114,10 +115,11 @@ export default function FarmerListings() {
                   className={`bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in-up delay-${Math.min(i + 1, 6)}`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-leaf-50 flex items-center justify-center text-3xl shrink-0">
-                      {crop.name.toLowerCase().includes('wheat') ? '🌾' : 
-                       crop.name.toLowerCase().includes('rice') ? '🍚' : 
-                       crop.name.toLowerCase().includes('corn') ? '🌽' : '🥦'}
+                    <div className="w-14 h-14 rounded-xl bg-leaf-50 overflow-hidden shrink-0">
+                      <img src={getCropImageUrl(crop.name)} alt={crop.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                      <div className="w-full h-full items-center justify-center text-2xl hidden">
+                        {getCropEmoji(crop.name)}
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">

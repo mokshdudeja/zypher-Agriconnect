@@ -6,6 +6,7 @@ import { collection, query, getDocs, orderBy } from 'firebase/firestore'
 import { useEffect } from 'react'
 import { useCart } from '../../context/CartContext'
 import { toast } from 'react-hot-toast'
+import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 export default function ProductListing() {
   const [searchParams] = useSearchParams()
@@ -48,10 +49,8 @@ export default function ProductListing() {
         // Map fields to component expectations
         const mappedData = cropsData.map(item => ({
           ...item,
-          farmer: profilesMap[item.farmer_id]?.name || 'Local Farmer',
-          image: item.name.toLowerCase().includes('wheat') ? '🌾' : 
-                 item.name.toLowerCase().includes('rice') ? '🍚' : 
-                 item.name.toLowerCase().includes('corn') ? '🌽' : '🥦',
+          farmer: profilesMap[item.farmer_id]?.name || 'Local Farmer',          image: getCropImageUrl(item.name),
+          emoji: getCropEmoji(item.name),
           rating: (4.5 + Math.random() * 0.5).toFixed(1), // Mock rating for UI
           reviews: Math.floor(Math.random() * 100) + 10,  // Mock reviews for UI
           originalPrice: (item.price * 1.2).toFixed(0),   // Mock original price
@@ -127,8 +126,11 @@ export default function ProductListing() {
                 to={`/consumer/products/${product.id}`}
                 className={`bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden group animate-fade-in-up`}
               >
-                <div className="relative h-44 bg-gradient-to-br from-slate-50 to-leaf-50/30 flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-500">
-                  {product.image}
+                <div className="relative h-44 bg-gradient-to-br from-slate-50 to-leaf-50/30 overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <div className="absolute inset-0 w-full h-full items-center justify-center text-5xl hidden">
+                    {product.emoji}
+                  </div>
                   {product.organic && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 bg-leaf-600 text-white rounded-full text-xs font-semibold">
                       <Leaf className="w-3 h-3" /> Organic

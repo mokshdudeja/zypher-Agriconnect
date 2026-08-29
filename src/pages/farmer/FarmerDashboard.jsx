@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, orderBy, limit, getCountFromServer }
 import { useAuth } from '../../context/AuthContext'
 import { useEffect } from 'react'
 import { toast } from 'react-hot-toast'
+import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 const languages = ['English', 'हिन्दी', 'தமிழ்', 'తెలుగు', 'ಕನ್ನಡ', 'मराठी']
 
@@ -175,10 +176,11 @@ export default function FarmerDashboard() {
           ) : recentCrops.length > 0 ? (
             recentCrops.map((crop) => (
               <div key={crop.id} className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all">
-                <div className="w-12 h-12 rounded-xl bg-leaf-50 flex items-center justify-center text-2xl">
-                  {crop.name.toLowerCase().includes('wheat') ? '🌾' : 
-                   crop.name.toLowerCase().includes('rice') ? '🍚' : 
-                   crop.name.toLowerCase().includes('corn') ? '🌽' : '🥦'}
+                <div className="w-12 h-12 rounded-xl bg-leaf-50 overflow-hidden shrink-0">
+                  <img src={getCropImageUrl(crop.name)} alt={crop.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <div className="w-full h-full items-center justify-center text-xl hidden">
+                    {getCropEmoji(crop.name)}
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 truncate">{crop.name}</p>
