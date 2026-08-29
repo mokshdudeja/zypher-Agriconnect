@@ -30,7 +30,7 @@ for init in ["prediction/__init__.py", "prediction/api/__init__.py", "ivr/__init
 # Install dependencies
 print("Installing dependencies...")
 subprocess.run(
-    ["pip", "install", "fastapi", "mangum", "requests", "pydantic", "boto3", "python-multipart", "-t", BUILD, "-q"],
+    ["pip", "install", "fastapi", "mangum", "requests", "pydantic", "boto3", "python-multipart", "firebase-admin", "-t", BUILD, "-q"],
     check=True,
 )
 

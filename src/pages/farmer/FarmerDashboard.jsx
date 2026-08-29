@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mic, Sprout, Package, TrendingUp, Clock, Globe, Loader2 } from 'lucide-react'
+import { Mic, Sprout, Package, TrendingUp, Clock, Globe, Loader2, Phone, CheckCircle, Link as LinkIcon } from 'lucide-react'
 import { StatCard } from '../../components/ui'
 import { db } from '../../lib/firebase'
 import { collection, query, where, getDocs, orderBy, limit, getCountFromServer } from 'firebase/firestore'
@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev'
 
 const languages = ['English', 'हिन्दी', 'தமிழ்', 'తెలుగు', 'ಕನ್ನಡ', 'मराठी']
 
@@ -23,6 +25,46 @@ export default function FarmerDashboard() {
     pendingOrders: 0
   })
   const [recentCrops, setRecentCrops] = useState([])
+  const [phoneLinked, setPhoneLinked] = useState(false)
+  const [linkingPhone, setLinkingPhone] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+
+  // Check if phone is linked
+  useEffect(() => {
+    if (!user) return
+    setPhoneLinked(!!user.phone)
+    if (user.phone) setPhoneInput(user.phone)
+  }, [user])
+
+  const handleLinkPhone = async () => {
+    if (!phoneInput.trim()) {
+      toast.error('Please enter your phone number')
+      return
+    }
+    let phone = phoneInput.trim()
+    if (!phone.startsWith('+')) {
+      phone = '+91' + phone.lstrip('0')
+    }
+    setLinkingPhone(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/voice-tools/link-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firebase_uid: user.id, phone })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPhoneLinked(true)
+        toast.success('Phone linked! You can now use voice features.')
+      } else {
+        toast.error(data.error || 'Failed to link phone')
+      }
+    } catch (err) {
+      toast.error('Failed to connect to server')
+    } finally {
+      setLinkingPhone(false)
+    }
+  }
 
   useEffect(() => {
     if (!user) return
@@ -164,6 +206,47 @@ export default function FarmerDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Phone Linking */}
+      {!phoneLinked && (
+        <div className="bg-gradient-to-r from-sky-50 to-leaf-50 border border-sky-200 rounded-2xl p-5 animate-fade-in-up delay-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center shrink-0">
+              <Phone className="w-6 h-6 text-sky-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-slate-800">Connect Your Phone Number</h3>
+              <p className="text-sm text-slate-500 mt-1">Link your phone to use voice features — call the number to check prices, list crops, and manage orders by voice.</p>
+              <div className="flex items-center gap-2 mt-3">
+                <input
+                  type="tel"
+                  value={phoneInput}
+                  onChange={e => setPhoneInput(e.target.value)}
+                  placeholder="Enter your phone number"
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <button
+                  onClick={handleLinkPhone}
+                  disabled={linkingPhone || !phoneInput.trim()}
+                  className="px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-bold hover:bg-sky-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {linkingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
+                  Link
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {phoneLinked && (
+        <div className="bg-leaf-50 border border-leaf-200 rounded-2xl p-4 animate-fade-in-up delay-5">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-leaf-600" />
+            <p className="text-sm font-semibold text-leaf-800">Phone linked: {user.phone || phoneInput}</p>
+            <span className="text-xs text-leaf-600 ml-auto">Call 01141183996 to use voice features</span>
+          </div>
+        </div>
+      )}
 
       {/* Recent Crops */}
       <div className="animate-fade-in-up delay-6">
