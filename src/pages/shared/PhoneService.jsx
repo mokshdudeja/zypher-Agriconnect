@@ -119,6 +119,13 @@ export default function PhoneService() {
             बिना स्मार्टफ़ोन के भी AI-संचालित कृषि सेवाओं का उपयोग करें।
             बस कॉल करें, बोलें, और जानकारी पाएं।
           </p>
+          <div className="mt-6 inline-flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-lg">
+            <Phone className="w-6 h-6" />
+            <div className="text-left">
+              <p className="text-sm font-medium text-emerald-100">अभी कॉल करें</p>
+              <p className="text-2xl font-bold tracking-wide">09513886363</p>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
