@@ -50,7 +50,7 @@ ORG_ID = os.getenv("SARVAM_ORG_ID", "01a046f3-1214-722c-b409-6b83b7889c3b")
 WORKSPACE_ID = os.getenv("SARVAM_WORKSPACE_ID", "01a046f3-1219-75f8-8b92-2ad1028ae7f8")
 
 # Agent config — fill in after creating agent in Sarvam UI
-AGENT_APP_ID = os.getenv("SARVAM_AGENT_APP_ID", "agriconnect-farmer-agent")
+AGENT_APP_ID = os.getenv("SARVAM_AGENT_APP_ID", "agriconnect-5ec5eade-5256")
 AGENT_APP_VERSION = int(os.getenv("SARVAM_AGENT_VERSION", "1"))
 CONNECTION_ID = os.getenv("SARVAM_CONNECTION_ID", "Exotel-Moks-136886e1-8df5")
 AGENT_PHONE = os.getenv("SARVAM_AGENT_PHONE", "+911141183996")
@@ -124,14 +124,17 @@ def trigger_outbound_call(
     """
     url = f"{SARVAM_VA_BASE}/outbounds/v1/orgs/{ORG_ID}/workspaces/{WORKSPACE_ID}/outbounds"
 
-    # Build agent variables — these get injected into the agent's prompt
-    agent_variables = {}
+    # Build initial message with context (avoids needing agent variables)
+    context_parts = []
     if farmer_name:
-        agent_variables["farmer_name"] = farmer_name
+        context_parts.append(f"The farmer's name is {farmer_name}")
     if state:
-        agent_variables["state"] = state
+        context_parts.append(f"They are from {state.replace('_', ' ').title()}")
     if crop_name:
-        agent_variables["crop_name"] = crop_name
+        context_parts.append(f"They grow {crop_name}")
+    initial_message = None
+    if context_parts:
+        initial_message = ". ".join(context_parts) + ". Please greet them warmly."
 
     payload = {
         "app_config": {
@@ -152,8 +155,8 @@ def trigger_outbound_call(
     }
 
     # Add optional fields
-    if agent_variables:
-        payload["app_config"]["agent_variables"] = agent_variables
+    if initial_message:
+        payload["initial_bot_message"] = initial_message
     if language:
         payload["initial_language_name"] = language
 
