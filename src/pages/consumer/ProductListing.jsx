@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, Star, Leaf, ShoppingCart, Loader2 } from 'lucide-react'
 import { db } from '../../lib/firebase'
 import { collection, query, getDocs, orderBy } from 'firebase/firestore'
@@ -8,8 +8,9 @@ import { useCart } from '../../context/CartContext'
 import { toast } from 'react-hot-toast'
 
 export default function ProductListing() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState(searchParams.get('category') || 'All')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const { addItem } = useCart()

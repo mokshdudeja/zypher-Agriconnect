@@ -9,18 +9,21 @@ const roleNavItems = {
     { path: '/farmer/add-crop', label: 'Add Crop' },
     { path: '/farmer/listings', label: 'My Listings' },
     { path: '/farmer/orders', label: 'Orders' },
+    { path: '/predictions', label: '📊 Prices' },
   ],
   wholesaler: [
     { path: '/wholesaler', label: 'Dashboard' },
     { path: '/wholesaler/browse', label: 'Browse Listings' },
     { path: '/wholesaler/inventory', label: 'Inventory' },
     { path: '/wholesaler/orders', label: 'Order History' },
+    { path: '/predictions', label: '📊 Prices' },
   ],
   consumer: [
     { path: '/consumer', label: 'Home' },
     { path: '/consumer/products', label: 'Products' },
     { path: '/consumer/cart', label: 'Cart' },
     { path: '/consumer/orders', label: 'Orders' },
+    { path: '/predictions', label: '📊 Prices' },
   ],
   admin: [
     { path: '/admin', label: 'Dashboard' },

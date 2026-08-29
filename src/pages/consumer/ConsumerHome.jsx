@@ -114,7 +114,7 @@ export default function ConsumerHome() {
                 Shop Now <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                to="/shared/prediction"
+                to="/predictions"
                 className="px-6 py-3.5 border-2 border-white/30 text-white rounded-xl font-bold hover:bg-white/10 transition-all"
               >
                 Check Crop Prices
@@ -194,7 +194,7 @@ export default function ConsumerHome() {
           {categories.map((cat) => (
             <Link
               key={cat.name}
-              to="/consumer/products"
+              to={`/consumer/products?category=${cat.name}`}
               className={`shrink-0 flex flex-col items-center gap-2 px-6 py-4 rounded-2xl border-2 ${cat.color} hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5`}
             >
               <span className="text-3xl">{cat.emoji}</span>

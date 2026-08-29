@@ -35,7 +35,8 @@ export default function AddCrop() {
     harvestDate: '', 
     price: '', 
     description: '',
-    location: ''
+    location: '',
+    state: 'maharashtra'
   })
 
   const handlePredict = async () => {
@@ -48,7 +49,7 @@ export default function AddCrop() {
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev';
       const cropSlug = form.name.toLowerCase().replace(/\s+/g, '_');
-      const state = 'maharashtra';
+      const state = form.state || 'maharashtra';
       // Pass the selected unit to the API — backend converts automatically
       const unitParam = form.unit === 'ton' ? 'tonne' : form.unit;
       const response = await fetch(`${API_BASE}/api/predict/${cropSlug}/${state}?unit=${unitParam}`);
@@ -216,6 +217,29 @@ export default function AddCrop() {
               className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-leaf-500 transition-all"
             />
           </div>
+        </div>
+
+        {/* State for AI Prediction */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">State (for AI Price)</label>
+          <select
+            value={form.state}
+            onChange={(e) => setForm({ ...form, state: e.target.value })}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 shadow-sm"
+          >
+            <option value="uttar_pradesh">Uttar Pradesh</option>
+            <option value="maharashtra">Maharashtra</option>
+            <option value="madhya_pradesh">Madhya Pradesh</option>
+            <option value="punjab">Punjab</option>
+            <option value="haryana">Haryana</option>
+            <option value="rajasthan">Rajasthan</option>
+            <option value="karnataka">Karnataka</option>
+            <option value="tamil_nadu">Tamil Nadu</option>
+            <option value="andhra_pradesh">Andhra Pradesh</option>
+            <option value="gujarat">Gujarat</option>
+            <option value="west_bengal">West Bengal</option>
+            <option value="bihar">Bihar</option>
+          </select>
         </div>
 
         {/* Price */}

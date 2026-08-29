@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, MapPin, Star, Filter, Loader2 } from 'lucide-react'
 import { Button, Card, Badge } from '../../components/ui'
 import { db } from '../../lib/firebase'
-import { collection, query, getDocs, orderBy, addDoc, serverTimestamp, limit, startAfter } from 'firebase/firestore'
-import { useEffect } from 'react'
+import { collection, query, getDocs, orderBy, addDoc, serverTimestamp, limit, startAfter, doc, getDoc } from 'firebase/firestore'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
 
@@ -20,54 +19,54 @@ export default function BrowseListings() {
   const [submitting, setSubmitting] = useState(false)
   const PAGE_SIZE = 20
 
-  useEffect(() => {
-    const fetchListings = async (isLoadMore = false) => {
-      try {
-        if (isLoadMore) setLoadingMore(true)
-        else setLoading(true)
+  const fetchListings = useCallback(async (isLoadMore = false) => {
+    try {
+      if (isLoadMore) setLoadingMore(true)
+      else setLoading(true)
 
-        let profilesMap = {}
-        if (!isLoadMore) {
-          const profilesSnap = await getDocs(collection(db, 'profiles'))
-          profilesSnap.docs.forEach(doc => { profilesMap[doc.id] = doc.data() })
-        }
-
-        const constraints = [orderBy('created_at', 'desc'), limit(PAGE_SIZE)]
-        if (isLoadMore && lastDoc) constraints.splice(1, 0, startAfter(lastDoc))
-        const cropsSnap = await getDocs(query(collection(db, 'crops'), ...constraints))
-
-        if (cropsSnap.docs.length < PAGE_SIZE) setHasMore(false)
-        if (cropsSnap.docs.length > 0) setLastDoc(cropsSnap.docs[cropsSnap.docs.length - 1])
-
-        const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-
-        const mapped = cropsData.map(l => ({
-          id: l.id,
-          farmer_id: l.farmer_id,
-          crop: l.name,
-          farmer: profilesMap[l.farmer_id]?.name || 'Local Farmer',
-          qty: `${l.quantity} ${l.unit}`,
-          numericQty: l.quantity,
-          unit: l.unit,
-          price: `₹${l.price}/${l.unit}`,
-          numericPrice: l.price,
-          harvestDate: l.harvest_date,
-          location: l.location || 'Unknown',
-          rating: (4.0 + Math.random()).toFixed(1)
-        }))
-
-        setListings(prev => isLoadMore ? [...prev, ...mapped] : mapped)
-      } catch (err) {
-        console.error('Fetch error:', err)
-        toast.error('Failed to load listings')
-      } finally {
-        setLoading(false)
-        setLoadingMore(false)
+      let profilesMap = {}
+      if (!isLoadMore) {
+        const profilesSnap = await getDocs(collection(db, 'profiles'))
+        profilesSnap.docs.forEach(d => { profilesMap[d.id] = d.data() })
       }
-    }
 
+      const constraints = [orderBy('created_at', 'desc'), limit(PAGE_SIZE)]
+      if (isLoadMore && lastDoc) constraints.splice(1, 0, startAfter(lastDoc))
+      const cropsSnap = await getDocs(query(collection(db, 'crops'), ...constraints))
+
+      if (cropsSnap.docs.length < PAGE_SIZE) setHasMore(false)
+      if (cropsSnap.docs.length > 0) setLastDoc(cropsSnap.docs[cropsSnap.docs.length - 1])
+
+      const cropsData = cropsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      const mapped = cropsData.map(l => ({
+        id: l.id,
+        farmer_id: l.farmer_id,
+        crop: l.name,
+        farmer: profilesMap[l.farmer_id]?.name || 'Local Farmer',
+        qty: `${l.quantity} ${l.unit}`,
+        numericQty: l.quantity,
+        unit: l.unit,
+        price: `₹${l.price}/${l.unit}`,
+        numericPrice: l.price,
+        harvestDate: l.harvest_date,
+        location: l.location || 'Unknown',
+        rating: (4.0 + Math.random()).toFixed(1)
+      }))
+
+      setListings(prev => isLoadMore ? [...prev, ...mapped] : mapped)
+    } catch (err) {
+      console.error('Fetch error:', err)
+      toast.error('Failed to load listings')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [lastDoc])
+
+  useEffect(() => {
     fetchListings()
-  }, [])
+  }, [fetchListings])
 
   const handleSubmitBid = async () => {
     if (!bidAmount || isNaN(parseFloat(bidAmount))) {

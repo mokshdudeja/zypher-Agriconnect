@@ -42,6 +42,7 @@ import Reports from './pages/admin/Reports'
 // Shared Pages
 import QRScannerPage from './pages/shared/QRScannerPage'
 import CropPricePrediction from './pages/shared/CropPricePrediction'
+import NotFound from './pages/shared/NotFound'
 
 /* Smart redirect: logged in → dashboard, logged out → login */
 function AuthRedirect() {
@@ -150,8 +151,8 @@ export default function App() {
         {/* Phone Service (public) */}
         <Route path="/phone" element={<PhoneService />} />
 
-        {/* Catch-all */}
-        <Route path="*" element={<AuthRedirect />} />
+        {/* Catch-all → 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster position="top-right" />
       <VoiceAgent />
