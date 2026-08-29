@@ -94,6 +94,17 @@ try:
 except ImportError:
     logger.warning("Could not import Farmer Phone Platform")
 
+# Mount Voice Agents for /api/voice-agents/* routes
+try:
+    from voice_agents import app as va_app
+    for route in va_app.routes:
+        if hasattr(route, 'path'):
+            existing = [r.path for r in app.routes if hasattr(r, 'path')]
+            if route.path not in existing:
+                app.routes.append(route)
+except ImportError:
+    logger.warning("Could not import Voice Agents module")
+
 
 # ─── Config ──────────────────────────────────────────────────────
 

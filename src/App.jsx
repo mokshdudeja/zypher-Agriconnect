@@ -38,6 +38,7 @@ import UserManagement from './pages/admin/UserManagement'
 import Verification from './pages/admin/Verification'
 import Transactions from './pages/admin/Transactions'
 import Reports from './pages/admin/Reports'
+import VoiceCalls from './pages/admin/VoiceCalls'
 
 // Shared Pages
 import QRScannerPage from './pages/shared/QRScannerPage'
@@ -132,6 +133,7 @@ export default function App() {
           <Route path="verify" element={<Verification />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="voice-calls" element={<VoiceCalls />} />
         </Route>
 
         {/* Shared QR Scanner Route */}

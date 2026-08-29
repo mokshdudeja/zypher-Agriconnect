@@ -31,6 +31,7 @@ const roleNavItems = {
     { path: '/admin/verify', label: 'Verification' },
     { path: '/admin/transactions', label: 'Transactions' },
     { path: '/admin/reports', label: 'Reports' },
+    { path: '/admin/voice-calls', label: '📞 Calls' },
   ],
 }
 

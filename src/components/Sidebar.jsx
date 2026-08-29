@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, ShieldCheck, ArrowLeftRight, FileBarChart, Sprout, X, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, ShieldCheck, ArrowLeftRight, FileBarChart, PhoneForwarded, Sprout, X, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const sidebarItems = [
@@ -8,6 +8,7 @@ const sidebarItems = [
   { path: '/admin/verify', label: 'Verification', icon: ShieldCheck },
   { path: '/admin/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { path: '/admin/reports', label: 'Reports', icon: FileBarChart },
+  { path: '/admin/voice-calls', label: 'Voice Calls', icon: PhoneForwarded },
 ]
 
 export default function Sidebar({ open, onClose }) {
