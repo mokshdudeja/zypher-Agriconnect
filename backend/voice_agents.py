@@ -52,7 +52,7 @@ WORKSPACE_ID = os.getenv("SARVAM_WORKSPACE_ID", "01a046f3-1219-75f8-8b92-2ad1028
 # Agent config — fill in after creating agent in Sarvam UI
 AGENT_APP_ID = os.getenv("SARVAM_AGENT_APP_ID", "agriconnect-farmer-agent")
 AGENT_APP_VERSION = int(os.getenv("SARVAM_AGENT_VERSION", "1"))
-CONNECTION_ID = os.getenv("SARVAM_CONNECTION_ID", "conn-exotel-agriconnect")
+CONNECTION_ID = os.getenv("SARVAM_CONNECTION_ID", "Exotel-Moks-136886e1-8df5")
 AGENT_PHONE = os.getenv("SARVAM_AGENT_PHONE", "+911141183996")
 
 # Webhook URL — Sarvam POSTs call outcomes here
