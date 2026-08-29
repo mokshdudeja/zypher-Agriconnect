@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import VoiceAgent from './components/VoiceAgent'
 import { Toaster } from 'react-hot-toast'
 
 // Layouts
@@ -149,6 +150,7 @@ export default function App() {
         <Route path="*" element={<AuthRedirect />} />
       </Routes>
       <Toaster position="top-right" />
+      <VoiceAgent />
     </CartProvider>
   )
 }

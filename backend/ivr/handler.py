@@ -73,6 +73,15 @@ try:
 except ImportError:
     logger.warning("Could not import prediction API app")
 
+# Mount the Sarvam API for /api/sarvam/tts, /api/sarvam/stt, /api/sarvam/translate routes
+try:
+    from sarvam.api import app as sarvam_app
+    for route in sarvam_app.routes:
+        if hasattr(route, 'path') and not route.path.startswith('/api/ivr'):
+            app.routes.append(route)
+except ImportError:
+    logger.warning("Could not import Sarvam API app")
+
 
 # ─── Config ──────────────────────────────────────────────────────
 
@@ -206,12 +215,10 @@ def sarvam_tts(text: str, language: str = "hi-IN", speaker: str = "priya") -> Op
         return None
 
     payload = {
-        "input": text,
-        "target_language_code": language,
+        "text": text,
+        "language_code": language,
         "speaker": speaker,
         "model": "bulbul:v3",
-        "output_audio_codec": "wav",
-        "speech_sample_rate": "24000",
     }
 
     try:
@@ -224,16 +231,30 @@ def sarvam_tts(text: str, language: str = "hi-IN", speaker: str = "priya") -> Op
             json=payload,
             timeout=15,
         )
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            logger.error(f"Sarvam TTS {resp.status_code}: {resp.text[:500]}")
+            logger.error(f"Payload: {json.dumps(payload, ensure_ascii=False)}")
+            return None
         data = resp.json()
 
-        audio_b64 = data.get("audio", data.get("audio_base64", ""))
-        if not audio_b64:
+        # Sarvam v3 returns audios array of base64 strings
+        audios = data.get("audios", [])
+        if not audios:
+            audio_b64 = data.get("audio", data.get("audio_base64", ""))
+            if audio_b64:
+                audios = [audio_b64]
+        
+        if not audios:
             logger.error("Sarvam TTS returned empty audio")
             return None
 
-        return base64.b64decode(audio_b64)
+        combined = "".join(audios)
+        return base64.b64decode(combined)
 
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Sarvam TTS HTTP {e.response.status_code}: {e.response.text[:500]}")
+        logger.error(f"Payload: {json.dumps(payload, ensure_ascii=False)}")
+        return None
     except Exception as e:
         logger.error(f"Sarvam TTS failed: {e}")
         return None
@@ -709,6 +730,65 @@ async def serve_ivr_audio(call_sid: str):
         media_type="audio/wav",
         headers={"Content-Disposition": f"attachment; filename=\"ivr_{call_sid}.wav\""},
     )
+
+
+@app.post("/api/sarvam/tts")
+async def sarvam_tts_endpoint(request: Request):
+    """
+    Sarvam TTS endpoint for the frontend Voice Agent.
+    Returns audio/wav.
+    """
+    body = await request.json()
+    text = body.get("text", "")
+    language = body.get("language", "hi")
+    voice = body.get("voice", "priya")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    # Resolve language code
+    lang_map = {'hi': 'hi-IN', 'en': 'en-IN', 'ta': 'ta-IN', 'te': 'te-IN', 'kn': 'kn-IN', 'mr': 'mr-IN'}
+    lang_code = lang_map.get(language, language if '-' in language else f"{language}-IN")
+
+    audio = sarvam_tts(text, language=lang_code, speaker=voice)
+    if not audio:
+        raise HTTPException(status_code=502, detail="TTS generation failed")
+
+    return Response(
+        content=audio,
+        media_type="audio/wav",
+        headers={"Content-Disposition": "attachment; filename=\"tts.wav\""},
+    )
+
+
+@app.post("/api/sarvam/translate")
+async def sarvam_translate_endpoint(request: Request):
+    """
+    Sarvam Translate endpoint for the frontend.
+    """
+    body = await request.json()
+    text = body.get("text", "")
+    source = body.get("source", "en")
+    target = body.get("target", "hi")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    try:
+        headers = {"API-Subscription-Key": SARVAM_API_KEY, "Content-Type": "application/json"}
+        payload = {
+            "input": text,
+            "source_language_code": source if '-' in source else f"{source}-IN",
+            "target_language_code": target if '-' in target else f"{target}-IN",
+            "mode": "formal"
+        }
+        resp = requests.post(f"{SARVAM_API_BASE}/translate", json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        result = resp.json()
+        return {"translated_text": result.get("translated_text", text), "source": source, "target": target}
+    except Exception as e:
+        logger.error(f"Translation failed: {e}")
+        raise HTTPException(status_code=502, detail="Translation failed")
 
 
 @app.post("/api/ivr/tts")
