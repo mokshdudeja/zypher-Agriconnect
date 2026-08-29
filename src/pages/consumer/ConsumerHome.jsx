@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Leaf, Truck, Shield, Star, Camera, Cloud, Thermometer, Droplets, Wind } from 'lucide-react'
+import { ArrowRight, Leaf, Truck, Shield, Star, Camera, Cloud, Thermometer, Droplets, Wind, Sprout } from 'lucide-react'
 import { db } from '../../lib/firebase'
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore'
 
@@ -96,6 +96,12 @@ export default function ConsumerHome() {
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="max-w-2xl animate-fade-in-up">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <Sprout className="w-6 h-6" />
+              </div>
+              <span className="font-display text-lg font-bold">AgriConnect</span>
+            </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 rounded-full text-sm font-medium mb-4 backdrop-blur-sm">
               <Leaf className="w-4 h-4" /> Farm to Table
             </span>

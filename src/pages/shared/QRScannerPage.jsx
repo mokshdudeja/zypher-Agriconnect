@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Html5QrcodeScanner } from 'html5-qrcode'
-import { X, Camera, ShieldCheck, ChevronLeft } from 'lucide-react'
+import { X, Camera, ShieldCheck, ChevronLeft, Sprout } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 export default function QRScannerPage() {
@@ -60,7 +60,10 @@ export default function QRScannerPage() {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="font-display font-bold text-lg text-white">Smart Crop Scanner</h1>
+        <div className="flex items-center gap-2">
+          <Sprout className="w-5 h-5 text-leaf-400" />
+          <h1 className="font-display font-bold text-lg text-white">Smart Crop Scanner</h1>
+        </div>
         <div className="w-10 h-10" /> {/* Spacer */}
       </div>
 

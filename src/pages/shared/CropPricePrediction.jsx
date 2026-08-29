@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, Minus, Cloud, Droplets,
-  BarChart3, Activity, Target, Brain, RefreshCw, Search,
+  BarChart3, Activity, Target, Brain, RefreshCw, Search, Sprout,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev";
@@ -113,12 +113,16 @@ export default function CropPricePrediction() {
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
-            <Brain className="text-leaf-600" size={28} />
-            <h1 className="text-3xl font-bold text-slate-800 font-display">Crop Price Prediction</h1>
+            <div className="w-10 h-10 bg-gradient-to-br from-leaf-500 to-leaf-700 rounded-xl flex items-center justify-center shadow-md">
+              <Sprout className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800 font-display">Crop Price Prediction</h1>
+              <p className="text-slate-500 text-sm">
+                AI-powered price forecasting using XGBoost + LSTM + Prophet ensemble model
+              </p>
+            </div>
           </div>
-          <p className="text-slate-500 ml-10">
-            AI-powered price forecasting using XGBoost + LSTM + Prophet ensemble model
-          </p>
         </div>
 
         {/* Selection Controls */}

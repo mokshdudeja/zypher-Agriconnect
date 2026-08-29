@@ -105,6 +105,12 @@ export default function PhoneService() {
 
         {/* Hero */}
         <div className="text-center mb-12 animate-fade-in-up">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-leaf-500 to-leaf-700 rounded-xl flex items-center justify-center shadow-md">
+              <Sprout className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-display text-lg font-bold text-slate-800">AgriConnect</span>
+          </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-leaf-100 text-leaf-700 rounded-full text-sm font-semibold mb-4">
             <Phone className="w-4 h-4" />
             कोई स्मार्टफ़ोन नहीं? कोई बात नहीं!
