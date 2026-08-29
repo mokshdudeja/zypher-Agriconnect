@@ -105,6 +105,17 @@ try:
 except ImportError:
     logger.warning("Could not import Voice Agents module")
 
+# Mount Voice Agent Tools for /api/voice-tools/* routes
+try:
+    from voice_tools import app as vt_app
+    for route in vt_app.routes:
+        if hasattr(route, 'path'):
+            existing = [r.path for r in app.routes if hasattr(r, 'path')]
+            if route.path not in existing:
+                app.routes.append(route)
+except ImportError:
+    logger.warning("Could not import Voice Agent Tools module")
+
 
 # ─── Config ──────────────────────────────────────────────────────
 

@@ -20,6 +20,7 @@ shutil.copy(os.path.join(ROOT, "backend/ivr/handler.py"), os.path.join(BUILD, "i
 shutil.copy(os.path.join(ROOT, "backend/ivr/farmer_phone.py"), os.path.join(BUILD, "ivr/"))
 shutil.copy(os.path.join(ROOT, "backend/prediction/api/app.py"), os.path.join(BUILD, "prediction/api/"))
 shutil.copy(os.path.join(ROOT, "backend/voice_agents.py"), os.path.join(BUILD, "voice_agents.py"))
+shutil.copy(os.path.join(ROOT, "backend/voice_tools.py"), os.path.join(BUILD, "voice_tools.py"))
 shutil.copy(os.path.join(ROOT, "backend/sarvam/api.py"), os.path.join(BUILD, "sarvam/api.py"))
 
 # Create __init__.py files
