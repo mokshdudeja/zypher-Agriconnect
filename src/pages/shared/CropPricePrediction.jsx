@@ -8,7 +8,8 @@ import {
   BarChart3, Activity, Target, Brain, RefreshCw, Search,
 } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev";
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 const CROPS = [
   { id: "wheat", name: "Wheat", emoji: "🌾", color: "#F59E0B" },
@@ -62,7 +63,9 @@ export default function CropPricePrediction() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/predict/${selectedCrop}/${selectedState}`);
+      const headers = {};
+      if (API_KEY) headers["x-api-key"] = API_KEY;
+      const res = await fetch(`${API_BASE}/api/predict/${selectedCrop}/${selectedState}`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setPrediction(data);
