@@ -1,4 +1,4 @@
-import { QrCode, Edit, Trash2, Package, Loader2, Download } from 'lucide-react'
+import { QrCode, Edit, Trash2, Package, Loader2, Download, Search } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge, EmptyState, Button } from '../../components/ui'
 import { db } from '../../lib/firebase'
@@ -12,6 +12,12 @@ export default function FarmerListings() {
   const [crops, setCrops] = useState([])
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = crops.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.category || '').toLowerCase().includes(search.toLowerCase())
+  )
 
   const fetchCrops = async () => {
     if (!user) return
@@ -82,98 +88,119 @@ export default function FarmerListings() {
           }
         />
       ) : (
-        <div className="space-y-3">
-          {crops.map((crop, i) => (
-            <div
-              key={crop.id}
-              className={`bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in-up delay-${Math.min(i + 1, 6)}`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-xl bg-leaf-50 flex items-center justify-center text-3xl shrink-0">
-                  {crop.name.toLowerCase().includes('wheat') ? '🌾' : 
-                   crop.name.toLowerCase().includes('rice') ? '🍚' : 
-                   crop.name.toLowerCase().includes('corn') ? '🌽' : '🥦'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-slate-800 text-lg">{crop.name}</h3>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        {crop.quantity} {crop.unit} · ₹{crop.price}/{crop.unit}
-                      </p>
-                    </div>
-                    <Badge variant={crop.status === 'Ready' ? 'success' : 'warning'}>
-                      {crop.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Harvest: {new Date(crop.harvest_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
- 
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <button
-                      onClick={() => setShowQR(showQR === crop.id ? null : crop.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-leaf-700 bg-leaf-50 hover:bg-leaf-100 rounded-lg transition-colors"
-                    >
-                      <QrCode className="w-3.5 h-3.5" /> QR Code
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
-                      <Edit className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleRemove(crop.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  </div>
+        <>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search your listings..."
+              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 shadow-sm"
+            />
+          </div>
 
-                  {/* QR Code Section */}
-                  {showQR === crop.id && (
-                    <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-scale-in flex flex-col items-center">
-                      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100" id={`qr-wrapper-${crop.id}`}>
-                        <QRCodeSVG 
-                          id={`qr-svg-${crop.id}`}
-                          value={`${window.location.origin}/consumer/products/${crop.id}`}
-                          size={128}
-                          level="H"
-                          includeMargin={true}
-                        />
-                      </div>
-                      <p className="text-xs text-slate-500 mt-3 font-medium">Digital Passport for {crop.name}</p>
-                      <button 
-                        onClick={() => {
-                          const svg = document.getElementById(`qr-svg-${crop.id}`);
-                          if (svg) {
-                            const svgData = new XMLSerializer().serializeToString(svg);
-                            const canvas = document.createElement("canvas");
-                            const ctx = canvas.getContext("2d");
-                            const img = new Image();
-                            img.onload = () => {
-                              canvas.width = img.width;
-                              canvas.height = img.height;
-                              ctx.drawImage(img, 0, 0);
-                              const pngFile = canvas.toDataURL("image/png");
-                              const downloadLink = document.createElement("a");
-                              downloadLink.download = `QR_${crop.name}.png`;
-                              downloadLink.href = pngFile;
-                              downloadLink.click();
-                            };
-                            img.src = "data:image/svg+xml;base64," + btoa(svgData);
-                          }
-                        }}
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg transition-colors border border-sky-100"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Download QR
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-dashed border-slate-200">
+              <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500">No listings match your search</p>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map((crop, i) => (
+                <div
+                  key={crop.id}
+                  className={`bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in-up delay-${Math.min(i + 1, 6)}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-leaf-50 flex items-center justify-center text-3xl shrink-0">
+                      {crop.name.toLowerCase().includes('wheat') ? '🌾' : 
+                       crop.name.toLowerCase().includes('rice') ? '🍚' : 
+                       crop.name.toLowerCase().includes('corn') ? '🌽' : '🥦'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-slate-800 text-lg">{crop.name}</h3>
+                          <p className="text-sm text-slate-500 mt-0.5">
+                            {crop.quantity} {crop.unit} · ₹{crop.price}/{crop.unit}
+                          </p>
+                        </div>
+                        <Badge variant={crop.status === 'Ready' ? 'success' : 'warning'}>
+                          {crop.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Harvest: {new Date(crop.harvest_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+ 
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          onClick={() => setShowQR(showQR === crop.id ? null : crop.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-leaf-700 bg-leaf-50 hover:bg-leaf-100 rounded-lg transition-colors"
+                        >
+                          <QrCode className="w-3.5 h-3.5" /> QR Code
+                        </button>
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
+                          <Edit className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleRemove(crop.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remove
+                        </button>
+                      </div>
+
+                      {/* QR Code Section */}
+                      {showQR === crop.id && (
+                        <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-scale-in flex flex-col items-center">
+                          <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100" id={`qr-wrapper-${crop.id}`}>
+                            <QRCodeSVG 
+                              id={`qr-svg-${crop.id}`}
+                              value={`${window.location.origin}/consumer/products/${crop.id}`}
+                              size={128}
+                              level="H"
+                              includeMargin={true}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500 mt-3 font-medium">Digital Passport for {crop.name}</p>
+                          <button 
+                            onClick={() => {
+                              const svg = document.getElementById(`qr-svg-${crop.id}`);
+                              if (svg) {
+                                const svgData = new XMLSerializer().serializeToString(svg);
+                                const canvas = document.createElement("canvas");
+                                const ctx = canvas.getContext("2d");
+                                const img = new Image();
+                                img.onload = () => {
+                                  canvas.width = img.width;
+                                  canvas.height = img.height;
+                                  ctx.drawImage(img, 0, 0);
+                                  const pngFile = canvas.toDataURL("image/png");
+                                  const downloadLink = document.createElement("a");
+                                  downloadLink.download = `QR_${crop.name}.png`;
+                                  downloadLink.href = pngFile;
+                                  downloadLink.click();
+                                };
+                                img.src = "data:image/svg+xml;base64," + btoa(svgData);
+                              }
+                            }}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg transition-colors border border-sky-100"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download QR
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

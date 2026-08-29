@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, Download, Loader2 } from 'lucide-react'
 import { Card, Badge } from '../../components/ui'
 import { db } from '../../lib/firebase'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-hot-toast'
 
@@ -14,33 +14,31 @@ export default function OrderHistory() {
   useEffect(() => {
     if (!user) return
 
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        const ordersQuery = query(
-          collection(db, 'orders'),
-          where('wholesaler_id', '==', user.id),
-          orderBy('created_at', 'desc')
-        )
-        const snapshot = await getDocs(ordersQuery)
-        const ordersData = snapshot.docs.map(doc => {
-          const data = doc.data()
-          const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
-          return {
-            id: doc.id,
-            ...data,
-            date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-          }
-        })
-        setOrders(ordersData)
-      } catch (err) {
-        console.error('Order history fetch error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
+    setLoading(true)
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('wholesaler_id', '==', user.id),
+      orderBy('created_at', 'desc')
+    )
 
-    fetchOrders()
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map(docSnap => {
+        const data = docSnap.data()
+        const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
+        return {
+          id: docSnap.id,
+          ...data,
+          date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        }
+      })
+      setOrders(ordersData)
+      setLoading(false)
+    }, (err) => {
+      console.error('Order history listener error:', err)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [user])
 
   const exportToCsv = (data, filename) => {

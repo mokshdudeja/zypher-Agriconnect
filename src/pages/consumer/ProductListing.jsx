@@ -4,12 +4,30 @@ import { Search, SlidersHorizontal, Star, Leaf, ShoppingCart, Loader2 } from 'lu
 import { db } from '../../lib/firebase'
 import { collection, query, getDocs, orderBy } from 'firebase/firestore'
 import { useEffect } from 'react'
+import { useCart } from '../../context/CartContext'
+import { toast } from 'react-hot-toast'
 
 export default function ProductListing() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const { addItem } = useCart()
+
+  const handleAddToCart = (e, product) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      unit: product.unit,
+      image: product.image,
+      farmer: product.farmer,
+      farmer_id: product.farmer_id,
+    })
+    toast.success(`${product.name} added to cart!`)
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -132,9 +150,12 @@ export default function ProductListing() {
                       <span className="text-lg font-bold text-slate-800">₹{product.price}</span>
                       <span className="text-sm text-slate-400 line-through ml-1.5">₹{product.originalPrice}</span>
                     </div>
-                    <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                    <button
+                      onClick={(e) => handleAddToCart(e, product)}
+                      className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 hover:bg-sky-600 hover:text-white transition-colors"
+                    >
                       <ShoppingCart className="w-4 h-4" />
-                    </div>
+                    </button>
                   </div>
                 </div>
               </Link>

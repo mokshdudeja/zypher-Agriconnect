@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Package, MapPin, CheckCircle, Clock, Truck, Loader2 } from 'lucide-react'
+import { Package, MapPin, CheckCircle, Clock, Truck, Loader2, Star } from 'lucide-react'
 import { Card, Badge } from '../../components/ui'
 import { db } from '../../lib/firebase'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../../context/AuthContext'
 
 const statusIcons = {
@@ -23,37 +23,57 @@ export default function ConsumerOrders() {
   const { user } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [ratingModal, setRatingModal] = useState(null)
+  const [rating, setRating] = useState(5)
+  const [review, setReview] = useState('')
+
+  const handleRate = async () => {
+    if (!ratingModal) return
+    try {
+      const { doc, updateDoc } = await import('firebase/firestore')
+      const { db } = await import('../../lib/firebase')
+      await updateDoc(doc(db, 'orders', ratingModal.id), {
+        rating,
+        review,
+        rated_at: new Date().toISOString(),
+      })
+      setOrders(prev => prev.map(o => o.id === ratingModal.id ? { ...o, rating, review } : o))
+      setRatingModal(null)
+      setRating(5)
+      setReview('')
+    } catch (err) {
+      console.error('Rating error:', err)
+    }
+  }
 
   useEffect(() => {
     if (!user) return
 
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        const ordersQuery = query(
-          collection(db, 'orders'),
-          where('consumer_id', '==', user.id),
-          orderBy('created_at', 'desc')
-        )
-        const snapshot = await getDocs(ordersQuery)
-        const ordersData = snapshot.docs.map(doc => {
-          const data = doc.data()
-          const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
-          return {
-            id: doc.id,
-            ...data,
-            date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-          }
-        })
-        setOrders(ordersData)
-      } catch (err) {
-        console.error('Fetch orders error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
+    setLoading(true)
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('consumer_id', '==', user.id),
+      orderBy('created_at', 'desc')
+    )
 
-    fetchOrders()
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map(docSnap => {
+        const data = docSnap.data()
+        const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
+        return {
+          id: docSnap.id,
+          ...data,
+          date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        }
+      })
+      setOrders(ordersData)
+      setLoading(false)
+    }, (err) => {
+      console.error('Orders listener error:', err)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [user])
 
   if (loading) {
@@ -122,11 +142,25 @@ export default function ConsumerOrders() {
                   </div>
                 )}
 
-                {order.status === 'Delivered' && (
+                {order.status === 'Delivered' && !order.rating && (
                   <div className="mt-4 pt-3 border-t border-slate-100">
-                    <button className="text-sm text-sky-600 font-semibold hover:text-sky-700">
+                    <button
+                      onClick={() => setRatingModal(order)}
+                      className="text-sm text-sky-600 font-semibold hover:text-sky-700"
+                    >
                       Rate & Review →
                     </button>
+                  </div>
+                )}
+                {order.rating && (
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-1">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className={`w-4 h-4 ${s <= order.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                      ))}
+                      <span className="text-xs text-slate-500 ml-1">Your rating</span>
+                    </div>
+                    {order.review && <p className="text-xs text-slate-400 mt-1">"{order.review}"</p>}
                   </div>
                 )}
               </Card>
@@ -140,6 +174,34 @@ export default function ConsumerOrders() {
           </div>
         )}
       </div>
+
+      {/* Rating Modal */}
+      {ratingModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setRatingModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-elevated animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-xl font-bold text-slate-800">Rate Your Order</h3>
+            <p className="text-sm text-slate-500 mt-1">{ratingModal.crop_name}</p>
+            <div className="flex items-center gap-1 mt-4 justify-center">
+              {[1,2,3,4,5].map(s => (
+                <button key={s} onClick={() => setRating(s)}>
+                  <Star className={`w-8 h-8 transition-colors ${s <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 hover:text-amber-200'}`} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={review}
+              onChange={e => setReview(e.target.value)}
+              placeholder="Write a review (optional)"
+              className="w-full mt-4 px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+              rows={3}
+            />
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setRatingModal(null)} className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors">Cancel</button>
+              <button onClick={handleRate} className="flex-1 px-4 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-semibold hover:bg-sky-700 transition-colors">Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
