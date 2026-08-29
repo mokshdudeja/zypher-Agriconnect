@@ -29,24 +29,24 @@ const STATES = [
 ];
 
 const TREND_ICONS = {
-  bullish: <TrendingUp className="text-green-500" size={20} />,
+  bullish: <TrendingUp className="text-leaf-600" size={20} />,
   bearish: <TrendingDown className="text-red-500" size={20} />,
-  stable: <Minus className="text-yellow-500" size={20} />,
+  stable: <Minus className="text-harvest-500" size={20} />,
 };
 
 const TREND_COLORS = {
-  bullish: "text-green-500",
+  bullish: "text-leaf-600",
   bearish: "text-red-500",
-  stable: "text-yellow-500",
+  stable: "text-harvest-500",
 };
 
 const FACTOR_LABELS = {
   low_rainfall: { label: "Low Rainfall", icon: <Droplets size={14} />, color: "bg-orange-100 text-orange-700" },
-  high_rainfall: { label: "High Rainfall", icon: <Cloud size={14} />, color: "bg-blue-100 text-blue-700" },
-  high_demand: { label: "High Demand", icon: <TrendingUp size={14} />, color: "bg-green-100 text-green-700" },
+  high_rainfall: { label: "High Rainfall", icon: <Cloud size={14} />, color: "bg-sky-100 text-sky-700" },
+  high_demand: { label: "High Demand", icon: <TrendingUp size={14} />, color: "bg-leaf-100 text-leaf-700" },
   low_demand: { label: "Low Demand", icon: <TrendingDown size={14} />, color: "bg-red-100 text-red-700" },
-  normal_market_conditions: { label: "Normal Market", icon: <Activity size={14} />, color: "bg-gray-100 text-gray-700" },
-  export_ban: { label: "Export Restrictions", icon: <Target size={14} />, color: "bg-purple-100 text-purple-700" },
+  normal_market_conditions: { label: "Normal Market", icon: <Activity size={14} />, color: "bg-slate-100 text-slate-700" },
+  export_ban: { label: "Export Restrictions", icon: <Target size={14} />, color: "bg-harvest-100 text-harvest-700" },
 };
 
 
@@ -107,26 +107,26 @@ export default function CropPricePrediction() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-b from-earth-50 to-leaf-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
-            <Brain className="text-emerald-600" size={28} />
-            <h1 className="text-3xl font-bold text-gray-900">Crop Price Prediction</h1>
+            <Brain className="text-leaf-600" size={28} />
+            <h1 className="text-3xl font-bold text-slate-800 font-display">Crop Price Prediction</h1>
           </div>
-          <p className="text-gray-500 ml-10">
+          <p className="text-slate-500 ml-10">
             AI-powered price forecasting using XGBoost + LSTM + Prophet ensemble model
           </p>
         </div>
 
         {/* Selection Controls */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6 mb-6 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Crop Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Crop</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Select Crop</label>
               <div className="flex flex-wrap gap-2">
                 {CROPS.map((crop) => (
                   <button
@@ -134,8 +134,8 @@ export default function CropPricePrediction() {
                     onClick={() => setSelectedCrop(crop.id)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                       selectedCrop === crop.id
-                        ? "bg-emerald-600 text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-leaf-600 text-white shadow-md"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
                     {crop.emoji} {crop.name}
@@ -146,11 +146,11 @@ export default function CropPricePrediction() {
 
             {/* State Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select State</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Select State</label>
               <select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-leaf-500 focus:border-leaf-500"
               >
                 {STATES.map((state) => (
                   <option key={state} value={state}>
@@ -162,7 +162,7 @@ export default function CropPricePrediction() {
 
             {/* Unit Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price Unit</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Price Unit</label>
               <div className="flex gap-2">
                 {["kg", "quintal", "tonne"].map((u) => (
                   <button
@@ -170,8 +170,8 @@ export default function CropPricePrediction() {
                     onClick={() => setSelectedUnit(u)}
                     className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex-1 ${
                       selectedUnit === u
-                        ? "bg-emerald-600 text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-leaf-600 text-white shadow-md"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
                     {u === "kg" ? "Per kg" : u === "quintal" ? "Per quintal" : "Per tonne"}
@@ -185,7 +185,7 @@ export default function CropPricePrediction() {
               <button
                 onClick={fetchPrediction}
                 disabled={loading}
-                className="w-full px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full px-6 py-2.5 bg-gradient-to-r from-leaf-600 to-leaf-700 text-white rounded-xl font-medium hover:from-leaf-700 hover:to-leaf-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={18} />
@@ -209,27 +209,27 @@ export default function CropPricePrediction() {
             {/* Price Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-fade-in">
               {/* Current Price */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-500">Current Price</span>
-                  <Activity className="text-gray-400" size={18} />
+                  <span className="text-sm font-medium text-slate-500">Current Price</span>
+                  <Activity className="text-slate-400" size={18} />
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-slate-800">
                   ₹{prediction.current_price?.toLocaleString("en-IN") || "—"}
                 </div>
-                <span className="text-xs text-gray-400">per {selectedUnit}</span>
+                <span className="text-xs text-slate-400">per {selectedUnit}</span>
               </div>
 
               {/* 7-Day */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-500">7-Day Forecast</span>
+                  <span className="text-sm font-medium text-slate-500">7-Day Forecast</span>
                   {TREND_ICONS[prediction.trend]}
                 </div>
                 <div className={`text-2xl font-bold ${TREND_COLORS[prediction.trend]}`}>
                   ₹{prediction.predicted_price_7d?.toLocaleString("en-IN") || "—"}
                 </div>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-slate-400">
                   {prediction.current_price > 0
                     ? `${(((prediction.predicted_price_7d - prediction.current_price) / prediction.current_price) * 100).toFixed(1)}%`
                     : "—"}{" "}
@@ -238,15 +238,15 @@ export default function CropPricePrediction() {
               </div>
 
               {/* 15-Day */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-500">15-Day Forecast</span>
+                  <span className="text-sm font-medium text-slate-500">15-Day Forecast</span>
                   {TREND_ICONS[prediction.trend]}
                 </div>
                 <div className={`text-2xl font-bold ${TREND_COLORS[prediction.trend]}`}>
                   ₹{prediction.predicted_price_15d?.toLocaleString("en-IN") || "—"}
                 </div>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-slate-400">
                   {prediction.current_price > 0
                     ? `${(((prediction.predicted_price_15d - prediction.current_price) / prediction.current_price) * 100).toFixed(1)}%`
                     : "—"}{" "}
@@ -255,15 +255,15 @@ export default function CropPricePrediction() {
               </div>
 
               {/* 30-Day */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-500">30-Day Forecast</span>
+                  <span className="text-sm font-medium text-slate-500">30-Day Forecast</span>
                   {TREND_ICONS[prediction.trend]}
                 </div>
                 <div className={`text-2xl font-bold ${TREND_COLORS[prediction.trend]}`}>
                   ₹{prediction.predicted_price_30d?.toLocaleString("en-IN") || "—"}
                 </div>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-slate-400">
                   {prediction.current_price > 0
                     ? `${(((prediction.predicted_price_30d - prediction.current_price) / prediction.current_price) * 100).toFixed(1)}%`
                     : "—"}{" "}
@@ -275,23 +275,23 @@ export default function CropPricePrediction() {
             {/* Confidence & Trend */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 animate-fade-in">
               {/* Confidence Gauge */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Target size={18} className="text-emerald-600" />
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <Target size={18} className="text-leaf-600" />
                   Model Confidence
                 </h3>
                 <div className="relative pt-4">
                   <div className="flex mb-2 items-center justify-between">
-                    <span className="text-sm text-gray-500">Confidence Level</span>
-                    <span className="text-sm font-bold text-emerald-600">
+                    <span className="text-sm text-slate-500">Confidence Level</span>
+                    <span className="text-sm font-bold text-leaf-600">
                       {(prediction.confidence * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-3">
+                  <div className="w-full bg-slate-100 rounded-full h-3">
                     <div
                       className={`h-3 rounded-full transition-all duration-1000 ${
                         prediction.confidence > 0.8
-                          ? "bg-gradient-to-r from-emerald-400 to-green-500"
+                          ? "bg-gradient-to-r from-leaf-400 to-leaf-500"
                           : prediction.confidence > 0.6
                           ? "bg-gradient-to-r from-yellow-400 to-orange-500"
                           : "bg-gradient-to-r from-red-400 to-red-500"
@@ -299,7 +299,7 @@ export default function CropPricePrediction() {
                       style={{ width: `${prediction.confidence * 100}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-slate-400 mt-2">
                     {prediction.confidence > 0.8
                       ? "High confidence — models agree on direction"
                       : prediction.confidence > 0.6
@@ -311,18 +311,18 @@ export default function CropPricePrediction() {
                 {/* Model Weights */}
                 {prediction.model_weights && (
                   <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Ensemble Weights</h4>
+                    <h4 className="text-sm font-medium text-slate-700 mb-3">Ensemble Weights</h4>
                     <div className="space-y-2">
                       {Object.entries(prediction.model_weights).map(([model, weight]) => (
                         <div key={model} className="flex items-center gap-3">
-                          <span className="text-xs text-gray-500 w-16 capitalize">{model}</span>
-                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                          <span className="text-xs text-slate-500 w-16 capitalize">{model}</span>
+                          <div className="flex-1 bg-slate-100 rounded-full h-2">
                             <div
-                              className="h-2 rounded-full bg-emerald-500"
+                              className="h-2 rounded-full bg-leaf-500"
                               style={{ width: `${weight * 100}%` }}
                             />
                           </div>
-                          <span className="text-xs font-medium text-gray-600 w-10 text-right">
+                          <span className="text-xs font-medium text-slate-600 w-10 text-right">
                             {(weight * 100).toFixed(0)}%
                           </span>
                         </div>
@@ -333,9 +333,9 @@ export default function CropPricePrediction() {
               </div>
 
               {/* Contributing Factors */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-emerald-600" />
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <BarChart3 size={18} className="text-leaf-600" />
                   Market Factors
                 </h3>
                 <div className="space-y-3">
@@ -343,7 +343,7 @@ export default function CropPricePrediction() {
                     const info = FACTOR_LABELS[factor] || {
                       label: factor,
                       icon: <Activity size={14} />,
-                      color: "bg-gray-100 text-gray-700",
+                      color: "bg-slate-100 text-slate-700",
                     };
                     return (
                       <div
@@ -358,9 +358,9 @@ export default function CropPricePrediction() {
                 </div>
 
                 {/* Trend Badge */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                <div className="mt-6 p-4 bg-slate-50 rounded-xl">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Market Trend</span>
+                    <span className="text-sm text-slate-500">Market Trend</span>
                     <div className="flex items-center gap-2">
                       {TREND_ICONS[prediction.trend]}
                       <span className={`text-lg font-bold capitalize ${TREND_COLORS[prediction.trend]}`}>
@@ -374,9 +374,9 @@ export default function CropPricePrediction() {
 
             {/* Price Chart */}
             {historyData.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 animate-fade-in">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-emerald-600" />
+              <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6 mb-6 animate-fade-in">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <BarChart3 size={18} className="text-leaf-600" />
                   30-Day Price Trajectory
                 </h3>
                 <ResponsiveContainer width="100%" height={350}>
@@ -428,11 +428,11 @@ export default function CropPricePrediction() {
             )}
 
             {/* Prediction Metadata */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Prediction Details</h3>
+            <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6 animate-fade-in">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">Prediction Details</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Generated at</span>
+                  <span className="text-slate-500">Generated at</span>
                   <p className="font-medium">
                     {prediction.generated_at
                       ? new Date(prediction.generated_at).toLocaleString("en-IN")
@@ -440,15 +440,15 @@ export default function CropPricePrediction() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Cached</span>
+                  <span className="text-slate-500">Cached</span>
                   <p className="font-medium">{prediction.cached ? "Yes" : "No"}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Crop</span>
+                  <span className="text-slate-500">Crop</span>
                   <p className="font-medium capitalize">{prediction.crop}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">State</span>
+                  <span className="text-slate-500">State</span>
                   <p className="font-medium capitalize">
                     {prediction.state?.replace(/_/g, " ")}
                   </p>
@@ -461,11 +461,11 @@ export default function CropPricePrediction() {
         {/* Empty State */}
         {!prediction && !loading && !error && (
           <div className="text-center py-20 animate-fade-in">
-            <Brain className="mx-auto text-gray-300 mb-4" size={64} />
-            <h3 className="text-xl font-semibold text-gray-500 mb-2">
+            <Brain className="mx-auto text-slate-300 mb-4" size={64} />
+            <h3 className="text-xl font-semibold text-slate-500 mb-2">
               Select a crop and state
             </h3>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Click "Get Prediction" to see AI-powered price forecasts
             </p>
           </div>

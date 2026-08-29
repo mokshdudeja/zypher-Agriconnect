@@ -125,7 +125,7 @@ export default function PhoneService() {
             </div>
             <div className="text-left">
               <p className="text-sm font-medium text-leaf-200">अभी कॉल करें</p>
-              <p className="text-2xl font-bold tracking-wide font-display">09513886363</p>
+              <p className="text-2xl font-bold tracking-wide font-display">01141183996</p>
             </div>
           </div>
         </div>

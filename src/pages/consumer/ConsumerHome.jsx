@@ -5,10 +5,10 @@ import { db } from '../../lib/firebase'
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore'
 
 const categories = [
-  { name: 'Grains', emoji: '🌾', color: 'bg-amber-50 border-amber-200' },
-  { name: 'Vegetables', emoji: '🥬', color: 'bg-green-50 border-green-200' },
+  { name: 'Grains', emoji: '🌾', color: 'bg-harvest-50 border-harvest-200' },
+  { name: 'Vegetables', emoji: '🥬', color: 'bg-leaf-50 border-leaf-200' },
   { name: 'Fruits', emoji: '🍎', color: 'bg-red-50 border-red-200' },
-  { name: 'Spices', emoji: '🌶️', color: 'bg-orange-50 border-orange-200' },
+  { name: 'Spices', emoji: '🌶️', color: 'bg-earth-50 border-earth-200' },
   { name: 'Other', emoji: '📦', color: 'bg-slate-50 border-slate-200' },
 ]
 
@@ -143,7 +143,7 @@ export default function ConsumerHome() {
               </div>
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-1.5 text-slate-600">
-                  <Droplets className="w-4 h-4 text-blue-400" />
+                  <Droplets className="w-4 h-4 text-sky-400" />
                   {weather.current?.relative_humidity_2m}% humidity
                 </div>
                 <div className="flex items-center gap-1.5 text-slate-600">
@@ -188,8 +188,7 @@ export default function ConsumerHome() {
       </section>
 
       {/* Categories */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <h2 className="font-display text-2xl font-bold text-slate-800 mb-5 animate-fade-in-up">Shop by Category</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">            <h2 className="font-display text-2xl font-bold text-slate-800 mb-5 animate-fade-in-up">Shop by Category</h2>
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none animate-fade-in-up">
           {categories.map((cat) => (
             <Link
