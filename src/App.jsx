@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import VoiceAgent from './components/VoiceAgent'
+import PhoneService from './pages/shared/PhoneService'
 import { Toaster } from 'react-hot-toast'
 
 // Layouts
@@ -145,6 +146,9 @@ export default function App() {
             <CropPricePrediction />
           </ProtectedRoute>
         } />
+
+        {/* Phone Service (public) */}
+        <Route path="/phone" element={<PhoneService />} />
 
         {/* Catch-all */}
         <Route path="*" element={<AuthRedirect />} />

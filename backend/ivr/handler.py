@@ -82,6 +82,18 @@ try:
 except ImportError:
     logger.warning("Could not import Sarvam API app")
 
+# Mount the Farmer Phone Platform for /api/ivr/incoming, /api/ivr/menu, etc.
+try:
+    from ivr.farmer_phone import app as phone_app
+    for route in phone_app.routes:
+        if hasattr(route, 'path'):
+            # Skip routes that already exist in the main app
+            existing = [r.path for r in app.routes if hasattr(r, 'path')]
+            if route.path not in existing:
+                app.routes.append(route)
+except ImportError:
+    logger.warning("Could not import Farmer Phone Platform")
+
 
 # ─── Config ──────────────────────────────────────────────────────
 
