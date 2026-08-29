@@ -1,24 +1,63 @@
-import { useState } from 'react'
-import { Search, Filter, MoreVertical } from 'lucide-react'
-import { Card, Badge, Button } from '../../components/ui'
-import { adminUsers } from '../../data/mockData'
+import { useState, useEffect } from 'react'
+import { Search, MoreVertical } from 'lucide-react'
+import { Card, Badge } from '../../components/ui'
+import { db } from '../../lib/firebase'
+import { collection, getDocs } from 'firebase/firestore'
+import { Loader2 } from 'lucide-react'
 
 export default function UserManagement() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('All')
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'profiles'))
+        const userData = snap.docs.map(d => {
+          const data = d.data()
+          return {
+            id: d.id,
+            name: data.name || 'Unknown',
+            email: data.email || '—',
+            role: data.role ? data.role.charAt(0).toUpperCase() + data.role.slice(1) : 'Consumer',
+            status: data.verified === true ? 'Verified' : data.status || 'Active',
+            joinDate: data.created_at?.toDate?.()?.toLocaleDateString('en-IN') ||
+                      (data.created_at ? new Date(data.created_at).toLocaleDateString('en-IN') : '—'),
+            orders: data.order_count || 0,
+          }
+        })
+        setUsers(userData)
+      } catch (err) {
+        console.error('Users fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUsers()
+  }, [])
 
   const roles = ['All', 'Farmer', 'Wholesaler', 'Consumer']
-  const filtered = adminUsers.filter(u => {
+  const filtered = users.filter(u => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
     const matchRole = roleFilter === 'All' || u.role === roleFilter
     return matchSearch && matchRole
   })
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="animate-fade-in-up">
         <h1 className="font-display text-2xl font-bold text-slate-800">User Management</h1>
-        <p className="text-slate-500 mt-1">{adminUsers.length} total users</p>
+        <p className="text-slate-500 mt-1">{users.length} total users</p>
       </div>
 
       {/* Filters */}
@@ -63,7 +102,7 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((user) => (
+              {filtered.length > 0 ? filtered.map((user) => (
                 <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -100,7 +139,13 @@ export default function UserManagement() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6" className="px-5 py-8 text-center text-sm text-slate-400">
+                    {users.length === 0 ? 'No users yet' : 'No matching users'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
