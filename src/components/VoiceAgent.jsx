@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Mic, MicOff, Volume2, X, MessageSquare, Bot, User, Loader2, Wheat } from 'lucide-react'
+import { Mic, MicOff, Volume2, X, MessageSquare, Bot, User, Loader2, Sprout } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev'
@@ -273,7 +273,7 @@ export default function VoiceAgent() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-leaf-600 to-leaf-600 text-white rounded-full shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-leaf-600 to-leaf-700 text-white rounded-full shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
         aria-label="Open Voice Agent"
       >
         <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
@@ -283,23 +283,23 @@ export default function VoiceAgent() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
+    <div className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-elevated border border-slate-200 flex flex-col overflow-hidden animate-fade-in-up">
       {/* Header */}
-      <div className="bg-gradient-to-r from-leaf-600 to-leaf-600 text-white p-4 flex items-center justify-between shrink-0">
+      <div className="bg-gradient-to-r from-leaf-600 to-leaf-700 text-white p-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Wheat className="w-6 h-6" />
+            <Sprout className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">AgriConnect AI</h3>
-            <p className="text-xs text-leaf-100">Voice Assistant • कृषि सहायक</p>
+            <h3 className="font-bold text-sm font-display">AgriConnect AI</h3>
+            <p className="text-xs text-leaf-200">Voice Assistant • कृषि सहायक</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={selectedLang}
             onChange={(e) => setSelectedLang(e.target.value)}
-            className="text-xs bg-white/20 text-white border border-white/30 rounded-lg px-2 py-1 focus:outline-none"
+            className="text-xs bg-white/20 text-white border border-white/30 rounded-lg px-2 py-1 focus:outline-none font-medium"
           >
             <option value="hi-IN">हिंदी</option>
             <option value="en-IN">English</option>
