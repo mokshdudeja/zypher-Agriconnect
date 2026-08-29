@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Phone, Mic, ShoppingCart, Cloud, User, Package, BarChart3, ArrowRight, Star, CheckCircle, Volume2, Hash } from 'lucide-react'
+import { Phone, Mic, ShoppingCart, Cloud, User, Package, BarChart3, ArrowRight, Star, CheckCircle, Volume2, Hash, Sprout, MessageCircle, Headphones, Zap } from 'lucide-react'
 
 const callSteps = [
   {
@@ -38,7 +38,7 @@ const callSteps = [
 
 const features = [
   {
-    icon: <BarChart3 className="w-8 h-8 text-emerald-600" />,
+    icon: <BarChart3 className="w-8 h-8 text-leaf-600" />,
     title: "फसल की कीमत",
     titleEn: "Crop Prices",
     description: "AI से भविष्य की कीमत का अनुमान — 7, 15, 30 दिन",
@@ -46,7 +46,7 @@ const features = [
     keyword: "1 दबाएं",
   },
   {
-    icon: <Cloud className="w-8 h-8 text-blue-600" />,
+    icon: <Cloud className="w-8 h-8 text-sky-600" />,
     title: "मौसम की जानकारी",
     titleEn: "Weather",
     description: "तापमान, बारिश, नमी — और खेती के सुझाव",
@@ -54,7 +54,7 @@ const features = [
     keyword: "2 दबाएं",
   },
   {
-    icon: <User className="w-8 h-8 text-purple-600" />,
+    icon: <User className="w-8 h-8 text-harvest-600" />,
     title: "प्रोफाइल प्रबंधन",
     titleEn: "Profile",
     description: "अपना नाम, फ़ोन, स्थान अपडेट करें",
@@ -62,7 +62,7 @@ const features = [
     keyword: "3 दबाएं",
   },
   {
-    icon: <Package className="w-8 h-8 text-orange-600" />,
+    icon: <Package className="w-8 h-8 text-earth-600" />,
     title: "फसल सूची",
     titleEn: "Crop Listings",
     description: "नई फसल जोड़ें, कीमत बदलें, बेची गई मार्क करें",
@@ -78,7 +78,7 @@ const features = [
     keyword: "5 दबाएं",
   },
   {
-    icon: <Star className="w-8 h-8 text-yellow-600" />,
+    icon: <Star className="w-8 h-8 text-harvest-500" />,
     title: "नई फसल जोड़ें",
     titleEn: "Add Crop",
     description: "बोलकर या बटन दबाकर फसल सूची में जोड़ें",
@@ -100,30 +100,32 @@ export default function PhoneService() {
   const [activeTab, setActiveTab] = useState('how')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-b from-earth-50 to-leaf-50/30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Hero */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold mb-4">
+        <div className="text-center mb-12 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-leaf-100 text-leaf-700 rounded-full text-sm font-semibold mb-4">
             <Phone className="w-4 h-4" />
             कोई स्मार्टफ़ोन नहीं? कोई बात नहीं!
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            फ़ोन से <span className="text-emerald-600">कृषि सेवा</span>
+          <h1 className="text-4xl sm:text-5xl font-bold text-slate-800 mb-4">
+            <span className="font-display">फ़ोन से <span className="text-leaf-600">कृषि सेवा</span></span>
           </h1>
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-600 mb-4">
+          <h2 className="text-xl sm:text-2xl font-semibold text-slate-500 mb-4 font-display">
             Phone-Based Farming Platform
           </h2>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+          <p className="text-slate-500 max-w-2xl mx-auto text-lg">
             बिना स्मार्टफ़ोन के भी AI-संचालित कृषि सेवाओं का उपयोग करें।
             बस कॉल करें, बोलें, और जानकारी पाएं।
           </p>
-          <div className="mt-6 inline-flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-lg">
-            <Phone className="w-6 h-6" />
+          <div className="mt-6 inline-flex items-center gap-4 px-6 py-4 bg-gradient-to-br from-leaf-600 to-leaf-700 text-white rounded-2xl shadow-elevated">
+            <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Phone className="w-6 h-6" />
+            </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-emerald-100">अभी कॉल करें</p>
-              <p className="text-2xl font-bold tracking-wide">09513886363</p>
+              <p className="text-sm font-medium text-leaf-200">अभी कॉल करें</p>
+              <p className="text-2xl font-bold tracking-wide font-display">09513886363</p>
             </div>
           </div>
         </div>
@@ -141,8 +143,8 @@ export default function PhoneService() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === tab.id
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  ? 'bg-leaf-600 text-white shadow-md'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
               {tab.label}
@@ -155,35 +157,35 @@ export default function PhoneService() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {callSteps.map((step, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                <div key={i} className="bg-white rounded-2xl p-6 shadow-card border border-slate-100 hover:shadow-card-hover transition-all">
+                  <div className="w-12 h-12 bg-leaf-100 text-leaf-600 rounded-xl flex items-center justify-center mb-4">
                     {step.icon}
                   </div>
-                  <div className="text-xs text-emerald-600 font-bold mb-1">Step {step.step}</div>
-                  <h3 className="font-bold text-gray-900 text-lg">{step.title}</h3>
-                  <p className="text-sm text-gray-400 mb-2">{step.titleEn}</p>
-                  <p className="text-sm text-gray-600">{step.description}</p>
-                  <p className="text-xs text-gray-400 mt-1">{step.descriptionEn}</p>
+                  <div className="text-xs text-leaf-600 font-bold mb-1">Step {step.step}</div>
+                  <h3 className="font-bold text-slate-800 text-lg font-display">{step.title}</h3>
+                  <p className="text-sm text-slate-400 mb-2">{step.titleEn}</p>
+                  <p className="text-sm text-slate-600">{step.description}</p>
+                  <p className="text-xs text-slate-400 mt-1">{step.descriptionEn}</p>
                 </div>
               ))}
             </div>
 
             {/* Phone Mockup */}
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 max-w-md mx-auto">
+            <div className="bg-white rounded-3xl p-8 shadow-card border border-slate-100 max-w-md mx-auto">
               <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-10 h-10 text-emerald-600" />
+                <div className="w-20 h-20 bg-leaf-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-10 h-10 text-leaf-600" />
                 </div>
-                <h3 className="font-bold text-xl text-gray-900">AgriConnect कॉल फ़्लो</h3>
+                <h3 className="font-bold text-xl text-slate-800 font-display">AgriConnect कॉल फ़्लो</h3>
               </div>
               <div className="space-y-3">
                 {[
-                  { ring: "📞 कॉल लगती है...", color: "bg-blue-50 text-blue-700" },
-                  { ring: '🤖 "नमस्ते! कृपया विकल्प चुनें..."', color: "bg-emerald-50 text-emerald-700" },
-                  { ring: '👆 किसान: [1] दबाता है', color: "bg-purple-50 text-purple-700" },
-                  { ring: '🤖 "फसल का नाम बोलें..."', color: "bg-emerald-50 text-emerald-700" },
-                  { ring: '🗣️ किसान: "गेहूं"', color: "bg-orange-50 text-orange-700" },
-                  { ring: '🤖 "गेहूं की कीमत ₹2042 है..."', color: "bg-emerald-50 text-emerald-700" },
+                  { ring: "📞 कॉल लगती है...", color: "bg-sky-50 text-sky-700 border border-sky-100" },
+                  { ring: '🤖 "नमस्ते! कृपया विकल्प चुनें..."', color: "bg-leaf-50 text-leaf-700 border border-leaf-100" },
+                  { ring: '👆 किसान: [1] दबाता है', color: "bg-harvest-50 text-harvest-700 border border-harvest-100" },
+                  { ring: '🤖 "फसल का नाम बोलें..."', color: "bg-leaf-50 text-leaf-700 border border-leaf-100" },
+                  { ring: '🗣️ किसान: "गेहूं"', color: "bg-earth-50 text-earth-700 border border-earth-100" },
+                  { ring: '🤖 "गेहूं की कीमत ₹2042 है..."', color: "bg-leaf-50 text-leaf-700 border border-leaf-100" },
                 ].map((item, i) => (
                   <div key={i} className={`${item.color} rounded-xl px-4 py-3 text-sm font-medium`}>
                     {item.ring}
@@ -198,12 +200,12 @@ export default function PhoneService() {
         {activeTab === 'features' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
             {features.map((f, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-card border border-slate-100 hover:shadow-card-hover transition-all">
                 <div className="mb-4">{f.icon}</div>
-                <h3 className="font-bold text-gray-900 text-lg">{f.title}</h3>
-                <p className="text-sm text-gray-400 mb-2">{f.titleEn}</p>
-                <p className="text-sm text-gray-600 mb-3">{f.description}</p>
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold">
+                <h3 className="font-bold text-slate-800 text-lg font-display">{f.title}</h3>
+                <p className="text-sm text-slate-400 mb-2">{f.titleEn}</p>
+                <p className="text-sm text-slate-600 mb-3">{f.description}</p>
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-leaf-50 text-leaf-700 rounded-full text-xs font-bold border border-leaf-100">
                   <Hash className="w-3 h-3" /> {f.keyword}
                 </div>
               </div>
@@ -214,23 +216,23 @@ export default function PhoneService() {
         {/* Languages */}
         {activeTab === 'languages' && (
           <div className="animate-fade-in">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 max-w-2xl mx-auto">
-              <h3 className="font-bold text-xl text-gray-900 mb-2 text-center">11+ भाषाओं में सेवा</h3>
-              <p className="text-sm text-gray-500 text-center mb-6">Service in 11+ Indian languages</p>
+            <div className="bg-white rounded-2xl p-8 shadow-card border border-slate-100 max-w-2xl mx-auto">
+              <h3 className="font-bold text-xl text-slate-800 mb-2 text-center font-display">11+ भाषाओं में सेवा</h3>
+              <p className="text-sm text-slate-500 text-center mb-6">Service in 11+ Indian languages</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {languages.map((lang) => (
-                  <div key={lang.code} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-bold text-emerald-700">
+                  <div key={lang.code} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-10 h-10 bg-leaf-100 rounded-full flex items-center justify-center text-sm font-bold text-leaf-700">
                       {lang.code.toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{lang.name}</p>
-                      <p className="text-xs text-gray-400">{lang.speakers} speakers</p>
+                      <p className="font-semibold text-slate-800">{lang.name}</p>
+                      <p className="text-xs text-slate-400">{lang.speakers} speakers</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-gray-500 text-center mt-6">
+              <p className="text-sm text-slate-500 text-center mt-6">
                 बोलने वाली AI तकनीक (Sarvam AI) सभी भाषाओं में प्राकृतिक आवाज़ में जवाब देती है।
               </p>
             </div>
@@ -240,8 +242,8 @@ export default function PhoneService() {
         {/* Demo */}
         {activeTab === 'demo' && (
           <div className="animate-fade-in max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-xl text-gray-900 mb-6 text-center">डेमो कॉल फ़्लो</h3>
+            <div className="bg-white rounded-2xl p-8 shadow-card border border-slate-100">
+              <h3 className="font-bold text-xl text-slate-800 mb-6 text-center font-display">डेमो कॉल फ़्लो</h3>
               <div className="space-y-4">
                 {[
                   { side: 'phone', text: "📞 *555# डायल करते हैं", time: "0:00" },
@@ -266,11 +268,11 @@ export default function PhoneService() {
                   <div key={i} className={`flex ${msg.side === 'phone' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                       msg.side === 'phone'
-                        ? 'bg-purple-100 text-purple-800 rounded-br-md'
-                        : 'bg-emerald-50 text-emerald-800 rounded-bl-md'
+                        ? 'bg-harvest-50 text-harvest-800 rounded-br-md border border-harvest-100'
+                        : 'bg-leaf-50 text-leaf-800 rounded-bl-md border border-leaf-100'
                     }`}>
                       <p className="text-sm">{msg.text}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{msg.time}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">{msg.time}</p>
                     </div>
                   </div>
                 ))}
@@ -279,20 +281,20 @@ export default function PhoneService() {
 
             {/* Impact Stats */}
             <div className="grid grid-cols-3 gap-4 mt-8">
-              <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-                <div className="text-3xl font-bold text-emerald-600">0</div>
-                <p className="text-sm text-gray-500">स्मार्टफ़ोन चाहिए</p>
-                <p className="text-xs text-gray-400">Smartphone needed</p>
+              <div className="bg-white rounded-2xl p-4 text-center shadow-card border border-slate-100">
+                <div className="text-3xl font-bold text-leaf-600 font-display">0</div>
+                <p className="text-sm text-slate-500">स्मार्टफ़ोन चाहिए</p>
+                <p className="text-xs text-slate-400">Smartphone needed</p>
               </div>
-              <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-                <div className="text-3xl font-bold text-emerald-600">11+</div>
-                <p className="text-sm text-gray-500">भाषाएँ</p>
-                <p className="text-xs text-gray-400">Languages</p>
+              <div className="bg-white rounded-2xl p-4 text-center shadow-card border border-slate-100">
+                <div className="text-3xl font-bold text-leaf-600 font-display">11+</div>
+                <p className="text-sm text-slate-500">भाषाएँ</p>
+                <p className="text-xs text-slate-400">Languages</p>
               </div>
-              <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
-                <div className="text-3xl font-bold text-emerald-600">24/7</div>
-                <p className="text-sm text-gray-500">उपलब्ध</p>
-                <p className="text-xs text-gray-400">Available</p>
+              <div className="bg-white rounded-2xl p-4 text-center shadow-card border border-slate-100">
+                <div className="text-3xl font-bold text-leaf-600 font-display">24/7</div>
+                <p className="text-sm text-slate-500">उपलब्ध</p>
+                <p className="text-xs text-slate-400">Available</p>
               </div>
             </div>
           </div>
