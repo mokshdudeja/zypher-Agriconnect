@@ -268,6 +268,7 @@ class PredictionResponse(BaseModel):
     confidence: float
     trend: str  # bullish | bearish | stable
     factors: List[str]
+    unit: str = "quintal"  # The unit these prices are in
     model_weights: Optional[dict] = None
     model_confidence: Optional[float] = None
     feature_importance: Optional[dict] = None
@@ -643,6 +644,7 @@ def _put_memory_cache(crop: str, state: str, prediction: dict):
 async def predict_price(
     crop: str,
     state: str,
+    unit: str = Query("quintal", description="Price unit: kg, quintal, or tonne"),
     use_cache: bool = Query(True, description="Use cached prediction if available"),
 ):
     """
@@ -650,6 +652,7 @@ async def predict_price(
 
     - **crop**: wheat, rice, maize, cotton, soybean, potato, tomato, onion, groundnut, sugarcane
     - **state**: Indian state in snake_case (uttar_pradesh, maharashtra, etc.)
+    - **unit**: kg, quintal (100kg), or tonne (1000kg). Default: quintal
     """
     crop = crop.lower().strip()
     state = state.lower().strip()
@@ -665,10 +668,20 @@ async def predict_price(
             detail=f"Unsupported state '{state}'. Supported: {SUPPORTED_STATES}",
         )
 
-    # 1. Check cache
+    # 1. Check cache (always stored in quintal)
     if use_cache:
         cached = _get_cached(crop, state) or _get_memory_cached(crop, state)
         if cached:
+            # Apply unit conversion to cached quintal prices
+            unit = unit.lower().strip()
+            unit_divisors = {"kg": 100, "quintal": 1, "tonne": 0.1}
+            divisor = unit_divisors.get(unit, 1)
+            if divisor != 1:
+                cached["current_price"] = round(cached["current_price"] / divisor, 2)
+                cached["predicted_price_7d"] = round(cached["predicted_price_7d"] / divisor, 2)
+                cached["predicted_price_15d"] = round(cached["predicted_price_15d"] / divisor, 2)
+                cached["predicted_price_30d"] = round(cached["predicted_price_30d"] / divisor, 2)
+            cached["unit"] = unit
             return PredictionResponse(**cached)
 
     # 2. Try loading trained ML model first
@@ -700,7 +713,18 @@ async def predict_price(
         prediction["last_updated"] = ml_prediction.get("last_updated", "")
         prediction["confidence"] = ml_prediction["model_confidence"]
 
-    # 6. Cache result
+    # 6. Unit conversion
+    unit = unit.lower().strip()
+    unit_divisors = {"kg": 100, "quintal": 1, "tonne": 0.1}
+    divisor = unit_divisors.get(unit, 1)
+    if divisor != 1:
+        prediction["current_price"] = round(prediction["current_price"] / divisor, 2)
+        prediction["predicted_price_7d"] = round(prediction["predicted_price_7d"] / divisor, 2)
+        prediction["predicted_price_15d"] = round(prediction["predicted_price_15d"] / divisor, 2)
+        prediction["predicted_price_30d"] = round(prediction["predicted_price_30d"] / divisor, 2)
+    prediction["unit"] = unit
+
+    # 7. Cache result (always cache in quintal for consistency)
     _put_cache(crop, state, prediction)
     _put_memory_cache(crop, state, prediction)
 

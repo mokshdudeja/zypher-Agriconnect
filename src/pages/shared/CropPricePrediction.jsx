@@ -53,6 +53,7 @@ const FACTOR_LABELS = {
 export default function CropPricePrediction() {
   const [selectedCrop, setSelectedCrop] = useState("wheat");
   const [selectedState, setSelectedState] = useState("uttar_pradesh");
+  const [selectedUnit, setSelectedUnit] = useState("quintal");
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,7 +63,7 @@ export default function CropPricePrediction() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/predict/${selectedCrop}/${selectedState}`);
+      const res = await fetch(`${API_BASE}/api/predict/${selectedCrop}/${selectedState}?unit=${selectedUnit}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setPrediction(data);
@@ -159,6 +160,26 @@ export default function CropPricePrediction() {
               </select>
             </div>
 
+            {/* Unit Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price Unit</label>
+              <div className="flex gap-2">
+                {["kg", "quintal", "tonne"].map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => setSelectedUnit(u)}
+                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex-1 ${
+                      selectedUnit === u
+                        ? "bg-emerald-600 text-white shadow-md"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {u === "kg" ? "Per kg" : u === "quintal" ? "Per quintal" : "Per tonne"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Predict Button */}
             <div className="flex items-end">
               <button
@@ -196,7 +217,7 @@ export default function CropPricePrediction() {
                 <div className="text-2xl font-bold text-gray-900">
                   ₹{prediction.current_price?.toLocaleString("en-IN") || "—"}
                 </div>
-                <span className="text-xs text-gray-400">per quintal</span>
+                <span className="text-xs text-gray-400">per {selectedUnit}</span>
               </div>
 
               {/* 7-Day */}

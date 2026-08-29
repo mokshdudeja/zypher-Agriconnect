@@ -49,29 +49,27 @@ export default function AddCrop() {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev';
       const cropSlug = form.name.toLowerCase().replace(/\s+/g, '_');
       const state = 'maharashtra';
-      const response = await fetch(`${API_BASE}/api/predict/${cropSlug}/${state}`);
+      // Pass the selected unit to the API — backend converts automatically
+      const unitParam = form.unit === 'ton' ? 'tonne' : form.unit;
+      const response = await fetch(`${API_BASE}/api/predict/${cropSlug}/${state}?unit=${unitParam}`);
       const data = await response.json()
       
       if (data.current_price) {
-        // API returns per quintal (100 kg), convert to selected unit
-        const pricePerQuintal = data.current_price;
-        const unitMultiplier = form.unit === 'kg' ? 0.01 : form.unit === 'ton' ? 10 : 1;
-        const convertedPrice = Math.round(pricePerQuintal * unitMultiplier * 100) / 100;
-        setPrediction(convertedPrice)
-        setForm(prev => ({ ...prev, price: convertedPrice.toString() }))
+        // Backend now returns prices in the requested unit
+        const price = Math.round(data.current_price * 100) / 100;
+        setPrediction(price)
+        setForm(prev => ({ ...prev, price: price.toString() }))
         const forecastData = [
-          { label: 'Today', price: Math.round(data.current_price * unitMultiplier) },
-          { label: '7 days', price: Math.round(data.predicted_price_7d * unitMultiplier) },
-          { label: '15 days', price: Math.round(data.predicted_price_15d * unitMultiplier) },
-          { label: '30 days', price: Math.round(data.predicted_price_30d * unitMultiplier) },
+          { label: 'Today', price: Math.round(data.current_price) },
+          { label: '7 days', price: Math.round(data.predicted_price_7d) },
+          { label: '15 days', price: Math.round(data.predicted_price_15d) },
+          { label: '30 days', price: Math.round(data.predicted_price_30d) },
         ];
         setForecast(forecastData)
-        toast.success(`7-day forecast: Rs${Math.round(data.predicted_price_7d * unitMultiplier)}/${form.unit} (${data.trend})`)
+        const unitLabel = data.unit || form.unit;
+        toast.success(`7-day forecast: Rs${Math.round(data.predicted_price_7d)}/${unitLabel} (${data.trend})`)
       } else {
-        const mockPrice = Math.floor(Math.random() * 2000) + 1000
-        setPrediction(mockPrice)
-        setForm(prev => ({ ...prev, price: mockPrice.toString() }))
-        toast.success('Suggested price based on overall trends')
+        toast.error('Could not get prediction for this crop')
       }
     } catch (err) {
       console.error('Prediction error:', err)
