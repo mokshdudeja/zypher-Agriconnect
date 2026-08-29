@@ -53,16 +53,20 @@ export default function AddCrop() {
       const data = await response.json()
       
       if (data.current_price) {
-        setPrediction(data.current_price)
-        setForm(prev => ({ ...prev, price: data.current_price.toString() }))
+        // API returns per quintal (100 kg), convert to selected unit
+        const pricePerQuintal = data.current_price;
+        const unitMultiplier = form.unit === 'kg' ? 0.01 : form.unit === 'ton' ? 10 : 1;
+        const convertedPrice = Math.round(pricePerQuintal * unitMultiplier * 100) / 100;
+        setPrediction(convertedPrice)
+        setForm(prev => ({ ...prev, price: convertedPrice.toString() }))
         const forecastData = [
-          { label: 'Today', price: data.current_price },
-          { label: '7 days', price: data.predicted_price_7d },
-          { label: '15 days', price: data.predicted_price_15d },
-          { label: '30 days', price: data.predicted_price_30d },
+          { label: 'Today', price: Math.round(data.current_price * unitMultiplier) },
+          { label: '7 days', price: Math.round(data.predicted_price_7d * unitMultiplier) },
+          { label: '15 days', price: Math.round(data.predicted_price_15d * unitMultiplier) },
+          { label: '30 days', price: Math.round(data.predicted_price_30d * unitMultiplier) },
         ];
         setForecast(forecastData)
-        toast.success(`7-day forecast: Rs${data.predicted_price_7d} (${data.trend})`)
+        toast.success(`7-day forecast: Rs${Math.round(data.predicted_price_7d * unitMultiplier)}/${form.unit} (${data.trend})`)
       } else {
         const mockPrice = Math.floor(Math.random() * 2000) + 1000
         setPrediction(mockPrice)
