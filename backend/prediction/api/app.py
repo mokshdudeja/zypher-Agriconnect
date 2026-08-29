@@ -627,6 +627,10 @@ def _get_memory_cached(crop: str, state: str) -> Optional[dict]:
         entry = _memory_cache[key]
         gen_time = datetime.fromisoformat(entry["generated_at"])
         if datetime.now() - gen_time < timedelta(hours=CACHE_TTL_HOURS):
+            # Skip corrupted cache entries with zero prices
+            if entry.get("current_price", 0) <= 0:
+                del _memory_cache[key]
+                return None
             entry["cached"] = True
             return entry
         else:
@@ -724,9 +728,17 @@ async def predict_price(
         prediction["predicted_price_30d"] = round(prediction["predicted_price_30d"] / divisor, 2)
     prediction["unit"] = unit
 
-    # 7. Cache result (always cache in quintal for consistency)
-    _put_cache(crop, state, prediction)
-    _put_memory_cache(crop, state, prediction)
+    # 7. Cache result in QUINTAL for consistency (before returning to user)
+    cache_copy = {**prediction}
+    if divisor != 1:
+        # Revert unit conversion for cache storage
+        cache_copy["current_price"] = round(prediction["current_price"] * divisor, 2)
+        cache_copy["predicted_price_7d"] = round(prediction["predicted_price_7d"] * divisor, 2)
+        cache_copy["predicted_price_15d"] = round(prediction["predicted_price_15d"] * divisor, 2)
+        cache_copy["predicted_price_30d"] = round(prediction["predicted_price_30d"] * divisor, 2)
+    cache_copy["unit"] = "quintal"
+    _put_cache(crop, state, cache_copy)
+    _put_memory_cache(crop, state, cache_copy)
 
     return PredictionResponse(**prediction)
 
