@@ -46,23 +46,25 @@ export default function AddCrop() {
 
     setIsPredicting(true)
     try {
-      // Use internal Vercel function
-      const response = await fetch('/api/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ crop: form.name })
-      })
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://pee54yt4m2.execute-api.ap-south-1.amazonaws.com/dev';
+      const cropSlug = form.name.toLowerCase().replace(/\s+/g, '_');
+      const state = 'maharashtra';
+      const response = await fetch(`${API_BASE}/api/predict/${cropSlug}/${state}`);
       const data = await response.json()
       
-      if (data.forecast) {
-        setForecast(data.forecast)
-        setPrediction(data.predicted_price)
-        setBestDay(data.best_date_to_sell)
-        setForm(prev => ({ ...prev, price: data.predicted_price.toString() }))
-        toast.success('7-day market forecast received!')
+      if (data.current_price) {
+        setPrediction(data.current_price)
+        setForm(prev => ({ ...prev, price: data.current_price.toString() }))
+        const forecastData = [
+          { label: 'Today', price: data.current_price },
+          { label: '7 days', price: data.predicted_price_7d },
+          { label: '15 days', price: data.predicted_price_15d },
+          { label: '30 days', price: data.predicted_price_30d },
+        ];
+        setForecast(forecastData)
+        toast.success(`7-day forecast: Rs${data.predicted_price_7d} (${data.trend})`)
       } else {
-        // Fallback
-        const mockPrice = Math.floor(Math.random() * 20) + 20
+        const mockPrice = Math.floor(Math.random() * 2000) + 1000
         setPrediction(mockPrice)
         setForm(prev => ({ ...prev, price: mockPrice.toString() }))
         toast.success('Suggested price based on overall trends')
