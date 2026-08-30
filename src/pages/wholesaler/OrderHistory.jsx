@@ -15,31 +15,50 @@ export default function OrderHistory() {
     if (!user) return
 
     setLoading(true)
-    let ordersQuery
-    try {
-      ordersQuery = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id), orderBy('created_at', 'desc'))
-    } catch (e) {
-      ordersQuery = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id))
-    }
+    let currentUnsub = null
 
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+    const processSnapshot = (snapshot) => {
       const ordersData = snapshot.docs.map(docSnap => {
         const data = docSnap.data()
-        const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
-        return {
-          id: docSnap.id,
-          ...data,
-          date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        }
+        let dateStr = '—'
+        try {
+          const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
+          if (!isNaN(date.getTime())) {
+            dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          }
+        } catch (e) { /* ignore */ }
+        return { id: docSnap.id, ...data, date: dateStr }
       })
       setOrders(ordersData)
       setLoading(false)
-    }, (err) => {
-      console.error('Order history listener error:', err)
-      setLoading(false)
-    })
+    }
 
-    return () => unsubscribe()
+    // Try with orderBy, fallback without
+    try {
+      const qOrdered = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id), orderBy('created_at', 'desc'))
+      currentUnsub = onSnapshot(qOrdered, processSnapshot, (err) => {
+        console.error('Order history listener error:', err)
+        // Fallback: retry without orderBy
+        try {
+          if (currentUnsub) currentUnsub()
+          const qSimple = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id))
+          currentUnsub = onSnapshot(qSimple, processSnapshot, (err2) => {
+            console.error('Order history fallback error:', err2)
+            setLoading(false)
+          })
+        } catch (e) {
+          setLoading(false)
+        }
+      })
+    } catch (e) {
+      const qSimple = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id))
+      currentUnsub = onSnapshot(qSimple, processSnapshot, (err) => {
+        console.error('Order history error:', err)
+        setLoading(false)
+      })
+    }
+
+    return () => { if (currentUnsub) currentUnsub() }
   }, [user])
 
   const exportToCsv = (data, filename) => {

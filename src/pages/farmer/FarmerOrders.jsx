@@ -24,32 +24,66 @@ export default function FarmerOrders() {
     if (!user) return
 
     setLoading(true)
-    let ordersQuery
-    try {
-      ordersQuery = query(collection(db, 'orders'), where('farmer_id', '==', user.id), orderBy('created_at', 'desc'))
-    } catch (e) {
-      ordersQuery = query(collection(db, 'orders'), where('farmer_id', '==', user.id))
+
+    // Try with orderBy first, fall back without it
+    const trySnapshot = (q) => new Promise((resolve, reject) => {
+      const unsub = onSnapshot(q, resolve, reject)
+      // Store unsub closer so we can clean up on fallback
+      unsubRef.current = unsub
+    })
+
+    const unsubRef = { current: null }
+
+    const setupListener = async () => {
+      try {
+        // Try with orderBy
+        const qOrdered = query(collection(db, 'orders'), where('farmer_id', '==', user.id), orderBy('created_at', 'desc'))
+        const snapshot = await trySnapshot(qOrdered)
+        processSnapshot(snapshot)
+      } catch (err) {
+        // Fallback: no orderBy
+        try {
+          if (unsubRef.current) unsubRef.current()
+          const qSimple = query(collection(db, 'orders'), where('farmer_id', '==', user.id))
+          const unsub = onSnapshot(qSimple, (snapshot) => {
+            processSnapshot(snapshot)
+          }, (err2) => {
+            console.error('Orders listener error:', err2)
+            toast.error('Failed to load orders')
+            setLoading(false)
+          })
+          unsubRef.current = unsub
+        } catch (err2) {
+          console.error('Orders fetch error:', err2)
+          toast.error('Failed to load orders')
+          setLoading(false)
+        }
+      }
     }
 
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+    const processSnapshot = (snapshot) => {
       const ordersData = snapshot.docs.map(docSnap => {
         const data = docSnap.data()
-        const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
+        let dateStr = '—'
+        try {
+          const date = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at)
+          if (!isNaN(date.getTime())) {
+            dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          }
+        } catch (e) { /* ignore */ }
         return {
           id: docSnap.id,
           ...data,
-          date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          date: dateStr,
         }
       })
       setOrders(ordersData)
       setLoading(false)
-    }, (err) => {
-      console.error('Orders listener error:', err)
-      toast.error('Failed to load orders')
-      setLoading(false)
-    })
+    }
 
-    return () => unsubscribe()
+    setupListener()
+
+    return () => { if (unsubRef.current) unsubRef.current() }
   }, [user])
 
   const handleAccept = async (orderId) => {
