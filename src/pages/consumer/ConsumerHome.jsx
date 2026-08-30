@@ -267,8 +267,7 @@ export default function ConsumerHome() {
             ))
           ) : (
             <div className="col-span-full text-center py-12 text-slate-400">
-              <p>No products listed yet. Be the first farmer to list!</p>
-              <Link to="/farmer/add" className="mt-3 inline-block text-leaf-600 font-semibold hover:underline">
+              <p>No products listed yet. Be the first farmer to list!</p>                <Link to="/register" className="mt-3 inline-block text-leaf-600 font-semibold hover:underline">
                 List Your Crop →
               </Link>
             </div>

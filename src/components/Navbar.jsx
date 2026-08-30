@@ -73,7 +73,7 @@ export default function Navbar({ role }) {
                 key={item.path}
                 to={item.path}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  location.pathname === item.path
+                  location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
                     ? 'bg-white/20 shadow-sm'
                     : 'hover:bg-white/10'
                 }`}
@@ -155,7 +155,7 @@ export default function Navbar({ role }) {
                 to={item.path}
                 onClick={() => setOpen(false)}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === item.path
+                  location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
                     ? 'bg-white/20'
                     : 'hover:bg-white/10'
                 }`}
