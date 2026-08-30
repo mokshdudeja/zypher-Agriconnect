@@ -1,0 +1,79 @@
+{
+  "crop": "wheat",
+  "state": "uttar_pradesh",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:45:50.337475",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 76.66,
+    "rmse": 96.1,
+    "r2": -0.0698,
+    "mape_pct": 3.5
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 90.19,
+      "rmse": 110.77,
+      "r2": -0.4822,
+      "mape": 4.1,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 91.51,
+      "rmse": 118.44,
+      "r2": 0.0492,
+      "mape": 4.08,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 53.61,
+      "rmse": 66.43,
+      "r2": -0.1071,
+      "mape": 2.58,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 60.76,
+      "rmse": 74.01,
+      "r2": 0.1571,
+      "mape": 2.88,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 87.22,
+      "rmse": 110.85,
+      "r2": 0.0339,
+      "mape": 3.84,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "month_cos": 0.6479,
+    "price_min_30": 0.1097,
+    "is_rabi": 0.0263,
+    "month_sin": 0.0218,
+    "day_of_year": 0.0132,
+    "price_mean_30": 0.0131,
+    "price_mean_7": 0.0128,
+    "price_mean_14": 0.0118,
+    "price_max_14": 0.0103,
+    "price_max_7": 0.0102,
+    "volatility_30": 0.0098,
+    "price_std_30": 0.0086,
+    "is_zaid": 0.0084,
+    "price_min_14": 0.0082,
+    "month": 0.0082
+  }
+}

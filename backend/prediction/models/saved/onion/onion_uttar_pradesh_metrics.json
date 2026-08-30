@@ -1,0 +1,79 @@
+{
+  "crop": "onion",
+  "state": "uttar_pradesh",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:46:38.946120",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 177.42,
+    "rmse": 210.59,
+    "r2": -0.1049,
+    "mape_pct": 15.02
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 546.52,
+      "rmse": 631.31,
+      "r2": -3.3649,
+      "mape": 49.89,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 169.92,
+      "rmse": 198.27,
+      "r2": 0.5415,
+      "mape": 13.13,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 55.37,
+      "rmse": 69.31,
+      "r2": 0.4683,
+      "mape": 2.94,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 59.23,
+      "rmse": 77.74,
+      "r2": 0.931,
+      "mape": 4.37,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 56.05,
+      "rmse": 76.32,
+      "r2": 0.8994,
+      "mape": 4.77,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "price_max_7": 0.5856,
+    "price_max_14": 0.2701,
+    "price_max_30": 0.0527,
+    "price_mean_7": 0.0518,
+    "month_sin": 0.0081,
+    "day_of_year": 0.0062,
+    "price_min_30": 0.0034,
+    "price_lag_30": 0.003,
+    "price_min_14": 0.0025,
+    "price_min_7": 0.0022,
+    "volatility_30": 0.0019,
+    "month": 0.0018,
+    "price_lag_3": 0.0017,
+    "price_mean_30": 0.0014,
+    "price_lag_1": 0.001
+  }
+}

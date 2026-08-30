@@ -1,0 +1,79 @@
+{
+  "crop": "wheat",
+  "state": "punjab",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:45:54.096420",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 85.12,
+    "rmse": 106.61,
+    "r2": -0.1214,
+    "mape_pct": 3.61
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 102.69,
+      "rmse": 127.71,
+      "r2": -0.8642,
+      "mape": 4.33,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 91.43,
+      "rmse": 113.48,
+      "r2": 0.188,
+      "mape": 3.86,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 61.55,
+      "rmse": 75.66,
+      "r2": -0.0877,
+      "mape": 2.78,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 54.99,
+      "rmse": 66.78,
+      "r2": 0.2823,
+      "mape": 2.41,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 114.95,
+      "rmse": 149.43,
+      "r2": -0.1256,
+      "mape": 4.67,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "month_cos": 0.6628,
+    "price_min_30": 0.0872,
+    "month_sin": 0.0335,
+    "price_mean_7": 0.0256,
+    "price_mean_30": 0.0183,
+    "month": 0.0177,
+    "is_zaid": 0.0137,
+    "price_max_7": 0.0096,
+    "price_mean_14": 0.0095,
+    "day_of_year": 0.0094,
+    "price_max_30": 0.0093,
+    "volatility_30": 0.0093,
+    "price_max_14": 0.0085,
+    "volatility_7": 0.0084,
+    "price_std_7": 0.0082
+  }
+}

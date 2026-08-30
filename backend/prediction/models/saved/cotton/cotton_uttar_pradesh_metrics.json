@@ -1,0 +1,79 @@
+{
+  "crop": "cotton",
+  "state": "uttar_pradesh",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:46:24.790794",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 234.71,
+    "rmse": 292.43,
+    "r2": -0.1633,
+    "mape_pct": 3.73
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 202.92,
+      "rmse": 252.35,
+      "r2": -0.0005,
+      "mape": 3.36,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 382.68,
+      "rmse": 474.41,
+      "r2": -0.9153,
+      "mape": 5.77,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 182.62,
+      "rmse": 226.71,
+      "r2": -0.0093,
+      "mape": 3.05,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 155.11,
+      "rmse": 199.06,
+      "r2": 0.2376,
+      "mape": 2.58,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 250.24,
+      "rmse": 309.63,
+      "r2": -0.129,
+      "mape": 3.87,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "is_rabi": 0.3501,
+    "month_cos": 0.1522,
+    "price_mean_14": 0.1294,
+    "price_mean_30": 0.0535,
+    "price_mean_7": 0.0394,
+    "day_of_year": 0.0232,
+    "month": 0.0205,
+    "price_min_30": 0.0189,
+    "price_min_7": 0.015,
+    "price_max_7": 0.0148,
+    "month_sin": 0.0147,
+    "price_max_14": 0.0138,
+    "price_momentum_7": 0.0133,
+    "volatility_30": 0.0125,
+    "price_lag_30": 0.0121
+  }
+}

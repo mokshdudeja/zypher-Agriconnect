@@ -1,0 +1,79 @@
+{
+  "crop": "cotton",
+  "state": "maharashtra",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:46:32.456800",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 219.68,
+    "rmse": 275.96,
+    "r2": -0.1304,
+    "mape_pct": 3.43
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 202.11,
+      "rmse": 257.8,
+      "r2": -0.0074,
+      "mape": 3.24,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 306.53,
+      "rmse": 377.34,
+      "r2": -0.6976,
+      "mape": 4.55,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 146.2,
+      "rmse": 186.4,
+      "r2": 0.014,
+      "mape": 2.39,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 174.38,
+      "rmse": 220.31,
+      "r2": 0.1436,
+      "mape": 2.87,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 269.17,
+      "rmse": 337.95,
+      "r2": -0.1047,
+      "mape": 4.08,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "price_min_30": 0.3606,
+    "is_rabi": 0.2311,
+    "month_cos": 0.1054,
+    "price_mean_14": 0.032,
+    "price_mean_7": 0.0255,
+    "price_min_14": 0.0212,
+    "price_max_14": 0.0187,
+    "is_zaid": 0.0162,
+    "day_of_year": 0.0143,
+    "month_sin": 0.0138,
+    "price_max_30": 0.0133,
+    "price_mean_30": 0.0132,
+    "volatility_30": 0.0122,
+    "volatility_7": 0.0118,
+    "month": 0.0112
+  }
+}

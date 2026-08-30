@@ -1,0 +1,79 @@
+{
+  "crop": "onion",
+  "state": "maharashtra",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:46:56.929291",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 177.72,
+    "rmse": 210.67,
+    "r2": -0.0466,
+    "mape_pct": 14.65
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 549.01,
+      "rmse": 631.79,
+      "r2": -3.1826,
+      "mape": 49.16,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 183.18,
+      "rmse": 219.22,
+      "r2": 0.4719,
+      "mape": 13.53,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 54.05,
+      "rmse": 66.51,
+      "r2": 0.6086,
+      "mape": 2.8,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 53.04,
+      "rmse": 69.23,
+      "r2": 0.9449,
+      "mape": 3.72,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 49.31,
+      "rmse": 66.59,
+      "r2": 0.924,
+      "mape": 4.03,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "price_max_7": 0.6423,
+    "price_max_14": 0.2245,
+    "price_max_30": 0.0281,
+    "month_sin": 0.0224,
+    "price_min_14": 0.0216,
+    "price_min_30": 0.0164,
+    "price_min_7": 0.0149,
+    "price_mean_14": 0.0056,
+    "day_of_year": 0.0054,
+    "price_lag_1": 0.0033,
+    "price_lag_3": 0.0031,
+    "price_lag_30": 0.0024,
+    "price_mean_7": 0.0024,
+    "price_mean_30": 0.0018,
+    "month": 0.0014
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "crop": "cotton",
+  "state": "punjab",
+  "model": "XGBoost",
+  "trained_at": "2026-08-30T17:46:28.234942",
+  "data_points": 699,
+  "features": 28,
+  "cross_validation_folds": 5,
+  "metrics": {
+    "mae": 233.39,
+    "rmse": 298.5,
+    "r2": -0.1419,
+    "mape_pct": 3.45
+  },
+  "fold_details": [
+    {
+      "fold": 1,
+      "mae": 193.28,
+      "rmse": 247.2,
+      "r2": 0.0903,
+      "mape": 2.97,
+      "train_size": 119,
+      "val_size": 116
+    },
+    {
+      "fold": 2,
+      "mae": 370.85,
+      "rmse": 473.44,
+      "r2": -0.7847,
+      "mape": 5.22,
+      "train_size": 235,
+      "val_size": 116
+    },
+    {
+      "fold": 3,
+      "mae": 168.68,
+      "rmse": 210.71,
+      "r2": -0.0388,
+      "mape": 2.62,
+      "train_size": 351,
+      "val_size": 116
+    },
+    {
+      "fold": 4,
+      "mae": 161.09,
+      "rmse": 204.97,
+      "r2": 0.1407,
+      "mape": 2.52,
+      "train_size": 467,
+      "val_size": 116
+    },
+    {
+      "fold": 5,
+      "mae": 273.03,
+      "rmse": 356.19,
+      "r2": -0.117,
+      "mape": 3.9,
+      "train_size": 583,
+      "val_size": 116
+    }
+  ],
+  "top_features": {
+    "month_cos": 0.1257,
+    "price_mean_30": 0.1067,
+    "price_mean_7": 0.1046,
+    "price_max_14": 0.1012,
+    "price_mean_14": 0.0653,
+    "price_max_7": 0.047,
+    "price_max_30": 0.037,
+    "month_sin": 0.036,
+    "month": 0.0322,
+    "day_of_year": 0.0321,
+    "volatility_30": 0.0313,
+    "is_kharif": 0.0247,
+    "price_momentum_30": 0.024,
+    "price_min_30": 0.0233,
+    "price_std_14": 0.0229
+  }
+}
