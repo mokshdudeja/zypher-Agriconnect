@@ -369,7 +369,7 @@ async def get_crop_recommend(state: str = Query("uttar_pradesh"), soil_type: str
 # ─── Tool 4: List Crop (Smart - auto-fills missing fields) ──────
 
 class ListCropRequest(BaseModel):
-    farmer_phone: str = Field(..., description="Farmer's phone number")
+    farmer_phone: Optional[str] = Field(None, description="Farmer's phone number (optional, auto-generated if missing)")
     crop_name: str = Field(..., description="Crop name in Hindi or English")
     quantity: Optional[float] = Field(None, description="Quantity (auto-defaults to 10 if missing)")
     unit: Optional[str] = Field(None, description="Unit: kg, quintal, ton")
@@ -425,23 +425,26 @@ async def list_crop(req: ListCropRequest):
             price = 20.0  # safe default
     
     # 7. Resolve farmer ID (auto-create profile if new caller)
-    farmer_id = _resolve_farmer_id(req.farmer_phone)
-    
-    # 7b. Auto-create profile for new callers
-    existing_profile = _firestore_get("profiles", farmer_id)
-    if not existing_profile and farmer_id != req.farmer_phone.replace(" ", ""):
-        # Phone was resolved to existing UID but no profile — skip
-        pass
-    elif not existing_profile:
-        # Brand new caller — create basic profile
-        _firestore_set("profiles", farmer_id, {
-            "name": "Farmer",
-            "role": "farmer",
-            "phone": req.farmer_phone,
-            "location": location,
-            "created_via": "voice_call",
-        })
-        logger.info(f"Auto-created profile for new caller {req.farmer_phone}")
+    if req.farmer_phone:
+        farmer_id = _resolve_farmer_id(req.farmer_phone)
+        # Auto-create profile for new callers
+        existing_profile = _firestore_get("profiles", farmer_id)
+        if not existing_profile and farmer_id != req.farmer_phone.replace(" ", ""):
+            pass  # Phone resolved to existing UID
+        elif not existing_profile:
+            _firestore_set("profiles", farmer_id, {
+                "name": "Farmer",
+                "role": "farmer",
+                "phone": req.farmer_phone,
+                "location": location,
+                "created_via": "voice_call",
+            })
+            logger.info(f"Auto-created profile for new caller {req.farmer_phone}")
+    else:
+        # No phone provided — generate temp ID for listing
+        import uuid
+        farmer_id = f"voice-{uuid.uuid4().hex[:12]}"
+        logger.info(f"No phone provided, generated temp ID: {farmer_id}")
     
     # 8. Create listing
     doc_id = _firestore_add("crops", {
