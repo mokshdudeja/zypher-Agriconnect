@@ -15,11 +15,12 @@ export default function OrderHistory() {
     if (!user) return
 
     setLoading(true)
-    const ordersQuery = query(
-      collection(db, 'orders'),
-      where('wholesaler_id', '==', user.id),
-      orderBy('created_at', 'desc')
-    )
+    let ordersQuery
+    try {
+      ordersQuery = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id), orderBy('created_at', 'desc'))
+    } catch (e) {
+      ordersQuery = query(collection(db, 'orders'), where('wholesaler_id', '==', user.id))
+    }
 
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const ordersData = snapshot.docs.map(docSnap => {

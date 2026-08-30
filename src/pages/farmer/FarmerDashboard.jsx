@@ -76,13 +76,19 @@ export default function FarmerDashboard() {
         const cropsRef = collection(db, 'crops')
         const myCropsQuery = query(cropsRef, where('farmer_id', '==', user.id))
 
-        // Run all queries in parallel
-        const [totalSnap, readySnap, recentSnap, ordersSnap] = await Promise.all([
+        // Run count queries in parallel
+        const [totalSnap, readySnap, ordersSnap] = await Promise.all([
           getCountFromServer(myCropsQuery),
           getCountFromServer(query(cropsRef, where('farmer_id', '==', user.id), where('status', '==', 'Ready'))),
-          getDocs(query(cropsRef, where('farmer_id', '==', user.id), orderBy('created_at', 'desc'), limit(3))),
           getDocs(query(collection(db, 'orders'), where('farmer_id', '==', user.id))),
         ])
+        // Recent crops with orderBy fallback
+        let recentSnap
+        try {
+          recentSnap = await getDocs(query(cropsRef, where('farmer_id', '==', user.id), orderBy('created_at', 'desc'), limit(3)))
+        } catch (e) {
+          recentSnap = await getDocs(query(cropsRef, where('farmer_id', '==', user.id), limit(3)))
+        }
 
         const recentCropsList = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         const myOrders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))

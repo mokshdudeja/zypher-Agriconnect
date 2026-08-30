@@ -36,7 +36,12 @@ export default function ProductListing() {
       try {
         setLoading(true)
         // 1. Fetch crops
-        const cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc')))
+        let cropsSnap
+        try {
+          cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc')))
+        } catch (e) {
+          cropsSnap = await getDocs(collection(db, 'crops'))
+        }
         const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
         // 2. Fetch profiles

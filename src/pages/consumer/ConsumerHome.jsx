@@ -30,7 +30,12 @@ export default function ConsumerHome() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc'), limit(4)))
+        let cropsSnap
+        try {
+          cropsSnap = await getDocs(query(collection(db, 'crops'), orderBy('created_at', 'desc'), limit(4)))
+        } catch (e) {
+          cropsSnap = await getDocs(query(collection(db, 'crops'), limit(4)))
+        }
         const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
         const profilesSnap = await getDocs(collection(db, 'profiles'))

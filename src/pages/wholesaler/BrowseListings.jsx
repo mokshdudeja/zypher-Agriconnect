@@ -30,9 +30,15 @@ export default function BrowseListings() {
         profilesSnap.docs.forEach(d => { profilesMap[d.id] = d.data() })
       }
 
-      const constraints = [orderBy('created_at', 'desc'), limit(PAGE_SIZE)]
-      if (isLoadMore && lastDoc) constraints.splice(1, 0, startAfter(lastDoc))
-      const cropsSnap = await getDocs(query(collection(db, 'crops'), ...constraints))
+      let cropsSnap
+      try {
+        const constraints = [orderBy('created_at', 'desc'), limit(PAGE_SIZE)]
+        if (isLoadMore && lastDoc) constraints.splice(1, 0, startAfter(lastDoc))
+        cropsSnap = await getDocs(query(collection(db, 'crops'), ...constraints))
+      } catch (queryErr) {
+        // Fallback: fetch without orderBy if created_at index missing
+        cropsSnap = await getDocs(query(collection(db, 'crops'), limit(PAGE_SIZE)))
+      }
 
       if (cropsSnap.docs.length < PAGE_SIZE) setHasMore(false)
       if (cropsSnap.docs.length > 0) setLastDoc(cropsSnap.docs[cropsSnap.docs.length - 1])

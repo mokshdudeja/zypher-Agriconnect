@@ -25,11 +25,12 @@ export default function FarmerListings() {
     try {
       setLoading(true)
       const cropsRef = collection(db, 'crops')
-      const q = query(
-        cropsRef, 
-        where('farmer_id', '==', user.id),
-        orderBy('created_at', 'desc')
-      )
+      let q
+      try {
+        q = query(cropsRef, where('farmer_id', '==', user.id), orderBy('created_at', 'desc'))
+      } catch (e) {
+        q = query(cropsRef, where('farmer_id', '==', user.id))
+      }
       
       const querySnapshot = await getDocs(q)
       const cropsList = querySnapshot.docs.map(doc => ({

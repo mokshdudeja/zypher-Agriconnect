@@ -21,12 +21,12 @@ export default function WholesalerDashboard() {
         setLoading(true)
 
         // Fetch orders where this wholesaler is the buyer
-        const ordersQuery = query(
-          collection(db, 'orders'),
-          where('wholesaler_id', '==', user.id),
-          orderBy('created_at', 'desc')
-        )
-        const ordersSnap = await getDocs(ordersQuery)
+        let ordersSnap
+        try {
+          ordersSnap = await getDocs(query(collection(db, 'orders'), where('wholesaler_id', '==', user.id), orderBy('created_at', 'desc')))
+        } catch (e) {
+          ordersSnap = await getDocs(query(collection(db, 'orders'), where('wholesaler_id', '==', user.id)))
+        }
         const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
         const activeDeals = orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length
