@@ -487,8 +487,91 @@ async def resolve_phone(phone: str = Query(...)):
     return {"phone": phone, "firebase_uid": uid if is_linked else None, "is_linked": is_linked}
 
 
+# ─── Tool 12: Update Profile ─────────────────────────────────────
+
+class UpdateProfileRequest(BaseModel):
+    phone: str = Field(..., description="Farmer's phone number")
+    name: Optional[str] = Field(None, description="New name")
+    location: Optional[str] = Field(None, description="New location")
+    farm_size: Optional[str] = Field(None, description="Farm size in acres")
+
+@app.post("/api/voice-tools/update-profile")
+async def update_profile(req: UpdateProfileRequest):
+    farmer_id = _resolve_farmer_id(req.phone)
+    updates = {}
+    if req.name:
+        updates["name"] = req.name
+    if req.location:
+        updates["location"] = req.location
+    if req.farm_size:
+        updates["farm_size"] = req.farm_size
+    if not updates:
+        return {"error": "No fields to update", "success": False}
+    success = _firestore_update("profiles", farmer_id, updates)
+    if success:
+        changed = ", ".join(updates.keys())
+        return {"success": True, "updated": updates, "message_hi": f"आपका प्रोफ़ाइल अपडेट हो गया। {changed} बदला गया।"}
+    return {"error": "Failed to update profile", "success": False}
+
+
+# ─── Tool 13: Delete Crop ────────────────────────────────────────
+
+class DeleteCropRequest(BaseModel):
+    phone: str = Field(..., description="Farmer's phone number")
+    crop_id: str = Field(..., description="Crop document ID to delete")
+
+@app.post("/api/voice-tools/delete-crop")
+async def delete_crop(req: DeleteCropRequest):
+    farmer_id = _resolve_farmer_id(req.phone)
+    doc = _firestore_get("crops", req.crop_id)
+    if not doc:
+        return {"error": "Crop not found", "success": False}
+    d = _parse_firestore_doc(doc)
+    if d.get("farmer_id") != farmer_id:
+        return {"error": "This crop does not belong to you", "success": False}
+    # Soft delete: mark as removed
+    success = _firestore_update("crops", req.crop_id, {"status": "Removed"})
+    if success:
+        return {"success": True, "crop": d.get("name"), "message_hi": f"{d.get('name', 'फसल')} की लिस्टिंग हटा दी गई।"}
+    return {"error": "Failed to delete crop", "success": False}
+
+
+# ─── Tool 14: Update Crop ────────────────────────────────────────
+
+class UpdateCropRequest(BaseModel):
+    phone: str = Field(..., description="Farmer's phone number")
+    crop_id: str = Field(..., description="Crop document ID")
+    price: Optional[float] = Field(None, description="New price per unit")
+    quantity: Optional[float] = Field(None, description="New quantity")
+    location: Optional[str] = Field(None, description="New location")
+
+@app.post("/api/voice-tools/update-crop")
+async def update_crop(req: UpdateCropRequest):
+    farmer_id = _resolve_farmer_id(req.phone)
+    doc = _firestore_get("crops", req.crop_id)
+    if not doc:
+        return {"error": "Crop not found", "success": False}
+    d = _parse_firestore_doc(doc)
+    if d.get("farmer_id") != farmer_id:
+        return {"error": "This crop does not belong to you", "success": False}
+    updates = {}
+    if req.price is not None:
+        updates["price"] = req.price
+    if req.quantity is not None:
+        updates["quantity"] = req.quantity
+    if req.location:
+        updates["location"] = req.location
+    if not updates:
+        return {"error": "No fields to update", "success": False}
+    success = _firestore_update("crops", req.crop_id, updates)
+    if success:
+        changed = ", ".join(f"{k}={v}" for k, v in updates.items())
+        return {"success": True, "updated": updates, "crop": d.get("name"), "message_hi": f"{d.get('name', 'फसल')} अपडेट हो गया। {changed} बदला गया।"}
+    return {"error": "Failed to update crop", "success": False}
+
+
 # ─── Health ──────────────────────────────────────────────────────
 
 @app.get("/api/voice-tools/health")
 async def health():
-    return {"status": "ok", "tools": 11, "firebase_project": FIREBASE_PROJECT}
+    return {"status": "ok", "tools": 14, "firebase_project": FIREBASE_PROJECT}
