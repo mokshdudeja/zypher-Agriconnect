@@ -125,9 +125,9 @@ export default function ConsumerHome() {
               </Link>
               <Link
                 to="/predictions"
-                className="px-6 py-3.5 border-2 border-white/30 text-white rounded-xl font-bold hover:bg-white/10 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/20 border-2 border-white/40 text-white rounded-xl font-bold hover:bg-white/30 backdrop-blur-sm transition-all ring-2 ring-white/20"
               >
-                Check Crop Prices
+                🤖 AI Price Prediction
               </Link>
             </div>
           </div>

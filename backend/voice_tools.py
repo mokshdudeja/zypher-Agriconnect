@@ -16,6 +16,8 @@ from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from utils import normalize_phone
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AgriConnect Voice Tools")
@@ -205,18 +207,7 @@ def _parse_firestore_docs(response):
 
 def _resolve_farmer_id(phone: str) -> str:
     """Resolve phone → Firebase UID via phone_lookup collection."""
-    normalized = phone.strip()
-    # Normalize: remove spaces, ensure +91 prefix, avoid double country code
-    if normalized.startswith("+"):
-        normalized = "+" + normalized.lstrip("+")
-    elif normalized.startswith("91") and len(normalized) > 10:
-        normalized = "+" + normalized
-    elif normalized.startswith("0"):
-        normalized = "+91" + normalized.lstrip("0")
-    else:
-        normalized = "+91" + normalized
-    # Remove any accidental spaces
-    normalized = normalized.replace(" ", "")
+    normalized = normalize_phone(phone)
     
     # Check phone_lookup
     doc = _firestore_get("phone_lookup", normalized)
@@ -478,15 +469,7 @@ async def list_crop(req: ListCropRequest):
 @app.get("/api/voice-tools/my-crops")
 async def get_my_crops(phone: str = Query(...)):
     # Query by both resolved UID and raw phone to find crops from web AND voice
-    normalized = phone.strip()
-    if not normalized.startswith("+"):
-        if normalized.startswith("91") and len(normalized) > 10:
-            normalized = "+" + normalized
-        elif normalized.startswith("0"):
-            normalized = "+91" + normalized.lstrip("0")
-        else:
-            normalized = "+91" + normalized
-    normalized = normalized.replace(" ", "")
+    normalized = normalize_phone(phone)
     farmer_id = _resolve_farmer_id(phone)
     # Merge results from both UID and phone lookups
     all_crops = {}
@@ -508,15 +491,7 @@ async def get_my_crops(phone: str = Query(...)):
 @app.get("/api/voice-tools/my-orders")
 async def get_my_orders(phone: str = Query(...)):
     # Query by both resolved UID and raw phone to find orders from web AND voice
-    normalized = phone.strip()
-    if not normalized.startswith("+"):
-        if normalized.startswith("91") and len(normalized) > 10:
-            normalized = "+" + normalized
-        elif normalized.startswith("0"):
-            normalized = "+91" + normalized.lstrip("0")
-        else:
-            normalized = "+91" + normalized
-    normalized = normalized.replace(" ", "")
+    normalized = normalize_phone(phone)
     farmer_id = _resolve_farmer_id(phone)
     all_orders = {}
     for fid in [farmer_id, normalized]:

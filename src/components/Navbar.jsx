@@ -6,24 +6,24 @@ import { useAuth } from '../context/AuthContext'
 const roleNavItems = {
   farmer: [
     { path: '/farmer', label: 'Dashboard' },
+    { path: '/predictions', label: '🤖 AI Prices', highlight: true },
     { path: '/farmer/add-crop', label: 'Add Crop' },
     { path: '/farmer/listings', label: 'My Listings' },
     { path: '/farmer/orders', label: 'Orders' },
-    { path: '/predictions', label: '📊 Prices' },
   ],
   wholesaler: [
     { path: '/wholesaler', label: 'Dashboard' },
+    { path: '/predictions', label: '🤖 AI Prices', highlight: true },
     { path: '/wholesaler/browse', label: 'Browse Listings' },
     { path: '/wholesaler/inventory', label: 'Inventory' },
     { path: '/wholesaler/orders', label: 'Order History' },
-    { path: '/predictions', label: '📊 Prices' },
   ],
   consumer: [
     { path: '/consumer', label: 'Home' },
+    { path: '/predictions', label: '🤖 AI Prices', highlight: true },
     { path: '/consumer/products', label: 'Products' },
     { path: '/consumer/cart', label: 'Cart' },
     { path: '/consumer/orders', label: 'Orders' },
-    { path: '/predictions', label: '📊 Prices' },
   ],
   admin: [
     { path: '/admin', label: 'Dashboard' },
@@ -73,9 +73,11 @@ export default function Navbar({ role }) {
                 key={item.path}
                 to={item.path}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
-                    ? 'bg-white/20 shadow-sm'
-                    : 'hover:bg-white/10'
+                  item.highlight
+                    ? 'bg-white/25 shadow-sm ring-1 ring-white/30'
+                    : location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
+                      ? 'bg-white/20 shadow-sm'
+                      : 'hover:bg-white/10'
                 }`}
               >
                 {item.label}
@@ -155,9 +157,11 @@ export default function Navbar({ role }) {
                 to={item.path}
                 onClick={() => setOpen(false)}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
-                    ? 'bg-white/20'
-                    : 'hover:bg-white/10'
+                  item.highlight
+                    ? 'bg-white/25 ring-1 ring-white/30'
+                    : location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path))
+                      ? 'bg-white/20'
+                      : 'hover:bg-white/10'
                 }`}
               >
                 {item.label}
