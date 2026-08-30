@@ -25,12 +25,13 @@ export function AuthProvider({ children }) {
         const profileSnap = await getDoc(profileRef)
         const profileData = profileSnap.exists() ? profileSnap.data() : {}
         
-        // If email is not verified, and user is not an admin, we sign out
-        if (!firebaseUser.emailVerified && profileData.role !== 'admin') {
-          setUser(null)
-          setLoading(false)
-          return
-        }
+        // For demo: allow access even if email not verified
+        // In production, uncomment the block below:
+        // if (!firebaseUser.emailVerified && profileData.role !== 'admin') {
+        //   setUser(null)
+        //   setLoading(false)
+        //   return
+        // }
 
         setUser({ ...firebaseUser, ...profileData, id: firebaseUser.uid })
       } else {
@@ -50,11 +51,12 @@ export function AuthProvider({ children }) {
       const profileSnap = await getDoc(doc(db, 'profiles', firebaseUser.uid))
       const profileData = profileSnap.exists() ? profileSnap.data() : {}
       
-      // Admin bypass for email verification
-      if (!firebaseUser.emailVerified && profileData.role !== 'admin') {
-        await signOut(auth)
-        return { success: false, error: 'verification_required' }
-      }
+      // For demo: allow login even if email not verified
+      // In production, uncomment the block below:
+      // if (!firebaseUser.emailVerified && profileData.role !== 'admin') {
+      //   await signOut(auth)
+      //   return { success: false, error: 'verification_required' }
+      // }
 
       const fullUser = { ...firebaseUser, ...profileData, id: firebaseUser.uid }
       setUser(fullUser)
