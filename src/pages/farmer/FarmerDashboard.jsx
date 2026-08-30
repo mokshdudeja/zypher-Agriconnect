@@ -43,7 +43,7 @@ export default function FarmerDashboard() {
     }
     let phone = phoneInput.trim()
     if (!phone.startsWith('+')) {
-      phone = '+91' + phone.lstrip('0')
+      phone = '+91' + phone.replace(/^0+/, '')
     }
     setLinkingPhone(true)
     try {
