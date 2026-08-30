@@ -89,12 +89,7 @@ export default function AdminDashboard() {
           pendingVerifications,
           monthlyGrowth: 0,
         })
-        setCategoryData(pieData.length > 0 ? pieData : [
-          { name: 'Grains', value: 35 },
-          { name: 'Vegetables', value: 30 },
-          { name: 'Fruits', value: 25 },
-          { name: 'Spices', value: 10 },
-        ])
+        setCategoryData(pieData.length > 0 ? pieData : [{ name: 'No crops yet', value: 1 }])
         setRecentTransactions(recentOrders)
       } catch (err) {
         console.error('Admin dashboard fetch error:', err)

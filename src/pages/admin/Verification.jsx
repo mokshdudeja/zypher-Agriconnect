@@ -26,7 +26,7 @@ export default function Verification() {
               status: data.verified === true ? 'Approved' : data.status || 'Pending',
             }
           })
-          .filter(u => u.status !== 'Approved' || Math.random() > 0.7) // Show some pending + recent
+          .filter(u => u.status !== 'Approved') // Show pending and under-review only
         setItems(verifications)
       } catch (err) {
         console.error('Verification fetch error:', err)

@@ -54,7 +54,7 @@ export default function Reports() {
         const avgOrder = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0
 
         setRevenueData(revenueDataArr)
-        setCategoryData(pieData.length > 0 ? pieData : [{ name: 'No data', value: 1 }])
+        setCategoryData(pieData.length > 0 ? pieData : [{ name: 'No crops yet', value: 1 }])
         setMetrics([
           { label: 'Avg Order Value', value: `₹${avgOrder.toLocaleString('en-IN')}`, change: '', positive: true },
           { label: 'Total Orders', value: orders.length.toLocaleString(), change: '', positive: true },
