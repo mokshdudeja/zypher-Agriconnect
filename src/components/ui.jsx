@@ -60,19 +60,6 @@ export function SkeletonCard() {
   )
 }
 
-export function SkeletonRow() {
-  return (
-    <div className="flex items-center gap-4 p-4 border-b border-slate-100">
-      <div className="skeleton h-10 w-10 rounded-full" />
-      <div className="flex-1 space-y-2">
-        <div className="skeleton h-4 w-40" />
-        <div className="skeleton h-3 w-24" />
-      </div>
-      <div className="skeleton h-6 w-20 rounded-full" />
-    </div>
-  )
-}
-
 export function Button({ children, variant = 'primary', size = 'md', className = '', ...props }) {
   const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed'
   const variants = {
