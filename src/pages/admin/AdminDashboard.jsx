@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Users, TrendingUp, ShoppingCart, Sprout, ArrowUpRight, AlertCircle, Package, Loader2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { StatCard, Card, Badge } from '../../components/ui'
@@ -200,9 +201,9 @@ export default function AdminDashboard() {
       <Card className="animate-fade-in-up delay-6">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-display text-lg font-bold text-slate-800">Recent Transactions</h3>
-          <a href="/admin/transactions" className="text-sm text-sky-600 font-semibold hover:text-sky-700 flex items-center gap-1">
+          <Link to="/admin/transactions" className="text-sm text-sky-600 font-semibold hover:text-sky-700 flex items-center gap-1">
             View All <ArrowUpRight className="w-4 h-4" />
-          </a>
+          </Link>
         </div>
         <div className="overflow-x-auto">
           {recentTransactions.length > 0 ? (

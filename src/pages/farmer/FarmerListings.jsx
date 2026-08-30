@@ -4,12 +4,14 @@ import { Badge, EmptyState, Button } from '../../components/ui'
 import { db } from '../../lib/firebase'
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-hot-toast'
 import { getCropImageUrl, getCropEmoji } from '../../data/cropImages'
 
 export default function FarmerListings() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [crops, setCrops] = useState([])
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(null)
@@ -84,7 +86,7 @@ export default function FarmerListings() {
           title="No listings yet"
           description="Add your first crop to start selling on AgriConnect."
           action={
-            <Button onClick={() => window.location.href = '/farmer/add-crop'}>
+            <Button onClick={() => navigate('/farmer/add-crop')}>
               Add Your First Crop
             </Button>
           }
