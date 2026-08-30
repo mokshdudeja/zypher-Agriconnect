@@ -55,8 +55,8 @@ def _firestore_get(collection, doc_id=None):
 
 
 def _firestore_query(collection, field, op, value, limit=10):
-    """Run a structured query on Firestore via REST API."""
-    url = f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}/databases/(default)/documents/{collection}?key={FIREBASE_API_KEY}"
+    """Run a structured query on Firestore via REST API (runQuery endpoint)."""
+    url = f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}/databases/(default)/documents:runQuery?key={FIREBASE_API_KEY}"
     body = {
         "structuredQuery": {
             "from": [{"collectionId": collection}],
@@ -67,7 +67,6 @@ def _firestore_query(collection, field, op, value, limit=10):
                     "value": {"stringValue": str(value)}
                 }
             },
-            "orderBy": [{"field": {"fieldPath": "created_at"}, "direction": "DESCENDING"}],
             "limit": limit
         }
     }
@@ -177,23 +176,47 @@ def _parse_firestore_doc(doc):
 
 
 def _parse_firestore_docs(response):
-    """Parse multiple documents from a Firestore query response."""
-    if not response or "documents" not in response:
+    """Parse multiple documents from a Firestore runQuery response.
+    runQuery returns a list of objects, each with a 'document' field."""
+    if not response:
         return []
-    docs = []
-    for doc in response["documents"]:
-        doc_id = doc.get("name", "").split("/")[-1]
-        fields = _parse_firestore_doc(doc)
-        fields["id"] = doc_id
-        docs.append(fields)
-    return docs
+    # runQuery returns a list [{document: {...}}, ...]
+    if isinstance(response, list):
+        docs = []
+        for item in response:
+            doc = item.get("document", item)  # may be nested or flat
+            if "name" in doc:
+                doc_id = doc["name"].split("/")[-1]
+                fields = _parse_firestore_doc(doc)
+                fields["id"] = doc_id
+                docs.append(fields)
+        return docs
+    # Fallback: old format with 'documents' key
+    if "documents" in response:
+        docs = []
+        for doc in response["documents"]:
+            doc_id = doc.get("name", "").split("/")[-1]
+            fields = _parse_firestore_doc(doc)
+            fields["id"] = doc_id
+            docs.append(fields)
+        return docs
+    return []
 
 
 def _resolve_farmer_id(phone: str) -> str:
     """Resolve phone → Firebase UID via phone_lookup collection."""
     normalized = phone.strip()
-    if not normalized.startswith("+"):
+    # Normalize: remove spaces, ensure +91 prefix, avoid double country code
+    if normalized.startswith("+"):
+        normalized = "+" + normalized.lstrip("+")
+    elif normalized.startswith("91") and len(normalized) > 10:
+        normalized = "+" + normalized
+    elif normalized.startswith("0"):
         normalized = "+91" + normalized.lstrip("0")
+    else:
+        normalized = "+91" + normalized
+    # Remove any accidental spaces
+    normalized = normalized.replace(" ", "")
     
     # Check phone_lookup
     doc = _firestore_get("phone_lookup", normalized)
@@ -342,42 +365,108 @@ async def get_crop_recommend(state: str = Query("uttar_pradesh"), soil_type: str
         return {"error": str(e)}
 
 
-# ─── Tool 4: List Crop ──────────────────────────────────────────
+# ─── Tool 4: List Crop (Smart - auto-fills missing fields) ──────
 
 class ListCropRequest(BaseModel):
     farmer_phone: str = Field(..., description="Farmer's phone number")
-    crop_name: str = Field(..., description="Crop name")
-    quantity: float = Field(..., description="Quantity")
-    unit: str = Field("kg")
-    price_per_unit: float = Field(..., description="Price per unit in INR")
-    location: str = Field("")
-    description: str = Field("")
+    crop_name: str = Field(..., description="Crop name in Hindi or English")
+    quantity: Optional[float] = Field(None, description="Quantity (auto-defaults to 10 if missing)")
+    unit: Optional[str] = Field(None, description="Unit: kg, quintal, ton")
+    price_per_unit: Optional[float] = Field(None, description="Price per unit (auto-fetched from prediction if missing)")
+    location: Optional[str] = Field(None, description="Location (auto-detected from phone state if missing)")
+    description: Optional[str] = Field("")
+
+CROP_MAP_HI = {"गेहूं": "wheat", "चावल": "rice", "मक्का": "maize", "कपास": "cotton", "आलू": "potato", "टमाटर": "tomato", "प्याज": "onion", "सोयाबीन": "soybean", "मूंगफली": "groundnut", "गन्ना": "sugarcane", "मूंग": "moong", "सरसों": "mustard", "चना": "chickpea"}
+VEGETABLES = ["tomato", "onion", "potato", "brinjal", "chilli", "spinach"]
+GRAINS = ["wheat", "rice", "maize", "millet", "barley"]
+# Location is always from farmer's input, never auto-detected from phone
 
 @app.post("/api/voice-tools/list-crop")
 async def list_crop(req: ListCropRequest):
-    CROP_MAP_HI = {"गेहूं": "wheat", "चावल": "rice", "मक्का": "maize", "कपास": "cotton", "आलू": "potato", "टमाटर": "tomato", "प्याज": "onion"}
+    # 1. Resolve crop name
     crop_en = CROP_MAP_HI.get(req.crop_name.strip(), req.crop_name.strip().lower())
-    VEGETABLES = ["tomato", "onion", "potato", "brinjal", "chilli", "spinach"]
-    GRAINS = ["wheat", "rice", "maize", "millet", "barley"]
+    
+    # 2. Auto-detect category
     category = "Vegetables" if crop_en in VEGETABLES else "Grains" if crop_en in GRAINS else "Other"
     
+    # 3. Auto-fill quantity (default 10)
+    quantity = req.quantity or 10
+    unit = req.unit or "kg"
+    
+    # 4. Use farmer's stated location only
+    location = req.location or "India"  # default only if farmer doesn't say
+    
+    # 5. Derive state from location for price lookup
+    STATE_SLUGS = {
+        "uttar pradesh": "uttar_pradesh", "maharashtra": "maharashtra", "punjab": "punjab",
+        "haryana": "haryana", "madhya pradesh": "madhya_pradesh", "rajasthan": "rajasthan",
+        "karnataka": "karnataka", "tamil nadu": "tamil_nadu", "andhra pradesh": "andhra_pradesh",
+        "gujarat": "gujarat", "west bengal": "west_bengal", "bihar": "bihar",
+        "telangana": "telangana", "odisha": "odisha", "jharkhand": "jharkhand",
+    }
+    location_lower = (req.location or "").lower().strip()
+    state_slug = "uttar_pradesh"  # default
+    for state_name, slug in STATE_SLUGS.items():
+        if state_name in location_lower:
+            state_slug = slug
+            break
+
+    # 6. Auto-fetch price from prediction API if missing
+    price = req.price_per_unit
+    if price is None:
+        try:
+            resp = requests.get(f"{API_BASE}/api/predict/{crop_en}/{state_slug}", params={"unit": unit}, timeout=10)
+            data = resp.json()
+            price = data.get("current_price", 20.0)
+            logger.info(f"Auto-fetched price for {crop_en}: {price}")
+        except Exception as e:
+            logger.warning(f"Price fetch failed: {e}")
+            price = 20.0  # safe default
+    
+    # 7. Resolve farmer ID (auto-create profile if new caller)
     farmer_id = _resolve_farmer_id(req.farmer_phone)
     
+    # 7b. Auto-create profile for new callers
+    existing_profile = _firestore_get("profiles", farmer_id)
+    if not existing_profile and farmer_id != req.farmer_phone.replace(" ", ""):
+        # Phone was resolved to existing UID but no profile — skip
+        pass
+    elif not existing_profile:
+        # Brand new caller — create basic profile
+        _firestore_set("profiles", farmer_id, {
+            "name": "Farmer",
+            "role": "farmer",
+            "phone": req.farmer_phone,
+            "location": location,
+            "created_via": "voice_call",
+        })
+        logger.info(f"Auto-created profile for new caller {req.farmer_phone}")
+    
+    # 8. Create listing
     doc_id = _firestore_add("crops", {
         "farmer_id": farmer_id,
         "name": crop_en,
         "category": category,
-        "quantity": req.quantity,
-        "unit": req.unit,
-        "price": req.price_per_unit,
-        "location": req.location or "India",
-        "description": req.description,
+        "quantity": quantity,
+        "unit": unit,
+        "price": price,
+        "location": location,
+        "description": req.description or "",
         "status": "Ready",
         "listed_via": "voice_call",
     })
     
     if doc_id:
-        return {"success": True, "crop": crop_en, "quantity": req.quantity, "unit": req.unit, "price": req.price_per_unit, "message_hi": f"बढ़िया! {crop_en} {req.quantity} {req.unit} {req.price_per_unit} रुपये में लिस्ट हो गया।"}
+        return {
+            "success": True,
+            "crop": crop_en, "quantity": quantity, "unit": unit, "price": price, "location": location,
+            "message_hi": f"बढ़िया! {crop_en} {quantity} {unit} {price} रुपये प्रति {unit} में लिस्ट हो गया।",
+            "auto_filled": {
+                "quantity": req.quantity is None,
+                "price": req.price_per_unit is None,
+                "location": req.location is None,
+            }
+        }
     return {"error": "Failed to list crop", "success": False}
 
 
@@ -385,9 +474,24 @@ async def list_crop(req: ListCropRequest):
 
 @app.get("/api/voice-tools/my-crops")
 async def get_my_crops(phone: str = Query(...)):
+    # Query by both resolved UID and raw phone to find crops from web AND voice
+    normalized = phone.strip()
+    if not normalized.startswith("+"):
+        if normalized.startswith("91") and len(normalized) > 10:
+            normalized = "+" + normalized
+        elif normalized.startswith("0"):
+            normalized = "+91" + normalized.lstrip("0")
+        else:
+            normalized = "+91" + normalized
+    normalized = normalized.replace(" ", "")
     farmer_id = _resolve_farmer_id(phone)
-    result = _firestore_query("crops", "farmer_id", "EQUAL", farmer_id, limit=10)
-    crops = _parse_firestore_docs(result)
+    # Merge results from both UID and phone lookups
+    all_crops = {}
+    for fid in [farmer_id, normalized]:
+        result = _firestore_query("crops", "farmer_id", "EQUAL", fid, limit=10)
+        for c in _parse_firestore_docs(result):
+            all_crops[c["id"]] = c
+    crops = list(all_crops.values())
     items = [f"{c.get('name', '?')} {c.get('quantity', '?')} {c.get('unit', '?')} {c.get('price', '?')} रुपये" for c in crops[:5]]
     return {
         "crops": [{"id": c["id"], "name": c.get("name"), "quantity": c.get("quantity"), "unit": c.get("unit"), "price": c.get("price"), "status": c.get("status")} for c in crops],
@@ -400,9 +504,23 @@ async def get_my_crops(phone: str = Query(...)):
 
 @app.get("/api/voice-tools/my-orders")
 async def get_my_orders(phone: str = Query(...)):
+    # Query by both resolved UID and raw phone to find orders from web AND voice
+    normalized = phone.strip()
+    if not normalized.startswith("+"):
+        if normalized.startswith("91") and len(normalized) > 10:
+            normalized = "+" + normalized
+        elif normalized.startswith("0"):
+            normalized = "+91" + normalized.lstrip("0")
+        else:
+            normalized = "+91" + normalized
+    normalized = normalized.replace(" ", "")
     farmer_id = _resolve_farmer_id(phone)
-    result = _firestore_query("orders", "farmer_id", "EQUAL", farmer_id, limit=10)
-    orders = _parse_firestore_docs(result)
+    all_orders = {}
+    for fid in [farmer_id, normalized]:
+        result = _firestore_query("orders", "farmer_id", "EQUAL", fid, limit=10)
+        for o in _parse_firestore_docs(result):
+            all_orders[o["id"]] = o
+    orders = list(all_orders.values())
     pending = sum(1 for o in orders if o.get("status") == "Pending")
     return {
         "orders": [{"id": o["id"], "crop_name": o.get("crop_name"), "quantity": o.get("quantity"), "total_price": o.get("total_price"), "status": o.get("status")} for o in orders],
