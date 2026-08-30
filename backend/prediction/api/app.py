@@ -295,7 +295,7 @@ class DailyForecast(BaseModel):
 
 
 class WeatherResponse(BaseModel):
-    district: str
+    district: Optional[str] = None
     state: str
     current: dict
     forecast: List[dict]
@@ -791,7 +791,7 @@ def _put_weather_cache(district: str, state: str, data: dict):
 
 def _resolve_coords(district: str, state: str) -> dict:
     """Resolve district name to coordinates, falling back to state centroid."""
-    district_lower = district.lower().strip()
+    district_lower = (district or '').lower().strip()
     state_lower = state.lower().strip()
 
     # Try exact district match
@@ -1010,7 +1010,7 @@ def _generate_recommendations(current: dict, forecast: list, alerts: list) -> li
 
 @app.get("/api/weather", response_model=WeatherResponse)
 async def get_weather(
-    district: str = Query(..., description="District name (e.g. lucknow, pune, indore)"),
+    district: str = Query(None, description="District name (e.g. lucknow, pune, indore)"),
     state: str = Query(..., description="State name in snake_case (e.g. uttar_pradesh)"),
     use_cache: bool = Query(True, description="Use cached weather if available"),
 ):
@@ -1023,12 +1023,13 @@ async def get_weather(
     Returns current conditions, daily forecast, weather alerts,
     and actionable farming recommendations.
     """
-    district = district.lower().strip()
+    if district:
+        district = district.lower().strip()
     state = state.lower().strip()
 
     # 1. Check cache
     if use_cache:
-        cached = _get_weather_cache(district, state)
+        cached = _get_weather_cache(district or 'default', state)
         if cached:
             return WeatherResponse(**cached)
 

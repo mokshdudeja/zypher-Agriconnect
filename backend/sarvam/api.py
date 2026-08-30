@@ -227,7 +227,7 @@ async def text_to_speech(request: TTSRequest):
     speaker = _resolve_voice(request.voice)
 
     payload = {
-        "input": request.text.strip(),
+        "text": request.text.strip(),
         "target_language_code": language_code,
         "speaker": speaker,
         "model": "bulbul:v3",
@@ -245,8 +245,9 @@ async def text_to_speech(request: TTSRequest):
         resp.raise_for_status()
         data = resp.json()
 
-        # Sarvam returns base64-encoded audio
-        audio_b64 = data.get("audio", data.get("audio_base64", ""))
+        # Sarvam returns base64-encoded audio in 'audios' array or 'audio' field
+        audios = data.get("audios", [])
+        audio_b64 = audios[0] if audios else data.get("audio", data.get("audio_base64", ""))
         if not audio_b64:
             raise HTTPException(status_code=502, detail="Sarvam returned empty audio")
 
