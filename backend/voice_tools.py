@@ -318,10 +318,11 @@ async def get_weather(state: str = Query(...), days: int = Query(3)):
             "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
             "current": "temperature_2m,relative_humidity_2m",
             "timezone": "Asia/Kolkata", "forecast_days": min(days, 7),
+            "current_weather": "true",
         }, timeout=10)
         data = resp.json()
         daily = data.get("daily", {})
-        current = data.get("current", {})
+        current = data.get("current_weather", {})
         alerts = []
         tips = []
         for i in range(len(daily.get("time", []))):
@@ -336,8 +337,8 @@ async def get_weather(state: str = Query(...), days: int = Query(3)):
         if not tips:
             tips.append("मौसम अनुकूल है। नियमित सिंचाई जारी रखें।")
         state_hi = STATE_MAP_HI.get(state, state)
-        temp = current.get("temperature_2m", "?")
-        hum = current.get("relative_humidity_2m", "?")
+        temp = current.get("temperature", "?")
+        hum = "?"  # current_weather doesn't include humidity
         return {
             "state": state, "state_hindi": state_hi,
             "current_temp": temp, "current_humidity": hum,

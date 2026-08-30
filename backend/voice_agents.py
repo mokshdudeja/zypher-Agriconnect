@@ -43,7 +43,7 @@ app.add_middleware(
 
 # ─── Config ──────────────────────────────────────────────────────
 
-SARVAM_VA_API_KEY = os.getenv("SARVAM_VA_API_KEY", "sk_samvaad_55ssyor9_0LQ8AN30lRDacOjth22fEBPw")
+SARVAM_VA_API_KEY = os.getenv("SARVAM_VA_API_KEY", "sk_samvaad_er9gqrus_nu26TjSwDYQh6ZjMxwLbsLnt")
 SARVAM_VA_BASE = "https://apps.sarvam.ai/api"
 
 ORG_ID = os.getenv("SARVAM_ORG_ID", "01a046f3-1214-722c-b409-6b83b7889c3b")
