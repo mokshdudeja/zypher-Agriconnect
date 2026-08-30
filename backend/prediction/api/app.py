@@ -552,7 +552,7 @@ def compute_prediction(crop: str, state: str, weather: Optional[dict] = None) ->
 
 _dynamodb = None
 _predictions_table = None
-USE_DYNAMODB = os.getenv("USE_DYNAMODB", "false").lower() == "true"
+USE_DYNAMODB = os.getenv("USE_DYNAMODB", "true").lower() == "true"
 
 
 def _get_dynamodb():
@@ -565,7 +565,7 @@ def _get_dynamodb():
                 "dynamodb",
                 region_name=os.getenv("AWS_REGION", "ap-south-1"),
             )
-            table_name = os.getenv("DYNAMODB_TABLE", "agriconnect-predictions")
+            table_name = os.getenv("PREDICTIONS_TABLE", "agriconnect-crop_prices-dev")
             _predictions_table = _dynamodb.Table(table_name)
         except Exception as e:
             logger.warning(f"DynamoDB init failed: {e}. Using in-memory cache.")
@@ -631,8 +631,10 @@ def _get_memory_cached(crop: str, state: str) -> Optional[dict]:
             if entry.get("current_price", 0) <= 0:
                 del _memory_cache[key]
                 return None
-            entry["cached"] = True
-            return entry
+            import copy
+            result = copy.deepcopy(entry)
+            result["cached"] = True
+            return result
         else:
             del _memory_cache[key]
     return None
@@ -729,13 +731,12 @@ async def predict_price(
     prediction["unit"] = unit
 
     # 7. Cache result in QUINTAL for consistency (before returning to user)
+    # Always store the quintal price so unit conversion works on cache hits
+    raw_prices = {k: prediction[k] for k in ["current_price", "predicted_price_7d", "predicted_price_15d", "predicted_price_30d"]}
     cache_copy = {**prediction}
-    if divisor != 1:
-        # Revert unit conversion for cache storage
-        cache_copy["current_price"] = round(prediction["current_price"] * divisor, 2)
-        cache_copy["predicted_price_7d"] = round(prediction["predicted_price_7d"] * divisor, 2)
-        cache_copy["predicted_price_15d"] = round(prediction["predicted_price_15d"] * divisor, 2)
-        cache_copy["predicted_price_30d"] = round(prediction["predicted_price_30d"] * divisor, 2)
+    # Revert any unit conversion: multiply back to get quintal
+    for k in raw_prices:
+        cache_copy[k] = round(raw_prices[k] * divisor, 2)
     cache_copy["unit"] = "quintal"
     _put_cache(crop, state, cache_copy)
     _put_memory_cache(crop, state, cache_copy)
@@ -774,8 +775,10 @@ def _get_weather_cache(district: str, state: str) -> Optional[dict]:
         entry = _weather_cache[key]
         fetched = datetime.fromisoformat(entry["fetched_at"])
         if datetime.now() - fetched < timedelta(hours=WEATHER_CACHE_TTL_HOURS):
-            entry["cached"] = True
-            return entry
+            import copy
+            result = copy.deepcopy(entry)
+            result["cached"] = True
+            return result
         else:
             del _weather_cache[key]
     return None
