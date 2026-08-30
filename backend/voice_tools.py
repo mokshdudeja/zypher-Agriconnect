@@ -316,7 +316,6 @@ async def get_weather(state: str = Query(...), days: int = Query(3)):
         resp = requests.get("https://api.open-meteo.com/v1/forecast", params={
             "latitude": coords[0], "longitude": coords[1],
             "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
-            "current": "temperature_2m,relative_humidity_2m",
             "timezone": "Asia/Kolkata", "forecast_days": min(days, 7),
             "current_weather": "true",
         }, timeout=10)

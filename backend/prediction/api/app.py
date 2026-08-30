@@ -315,7 +315,7 @@ def fetch_weather(lat: float, lon: float, forecast_days: int = 7) -> Optional[di
     url = (
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}&longitude={lon}"
-        f"&daily=temperature_2m_max,temperature_2m_min,precitation_sum"
+        f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
         f"&timezone=Asia/Kolkata"
         f"&forecast_days={forecast_days}"
     )
